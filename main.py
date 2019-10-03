@@ -27,7 +27,7 @@ DCCON_HOME_URL = 'https://dccon.dcinside.com/'
 DCCON_SEARCH_URL = 'https://dccon.dcinside.com/hot/1/title/'
 DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
-INVITE_URL = 'https://discordapp.com/oauth2/authorize?&client_id=464437182887886850&scope=bot&permissions=101376'
+INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
 
 
 bot = commands.Bot(command_prefix='!')
@@ -106,11 +106,16 @@ async def send_dccon(ctx, *args):
 
     package_search_req = s.get(DCCON_SEARCH_URL + package_name)
     package_search_html = BeautifulSoup(package_search_req.text, 'html.parser')
-    package_search_list = package_search_html.select('#right_cont_wrap > div > div.dccon_listbox > ul > li')
+    package_search_is_empty = package_search_html.select('#right_cont_wrap > div > div.dccon_search_none > p > span')   # 검색결과가 없는경우 체크
+    if not package_search_is_empty:
+        package_search_list = package_search_html.select('#right_cont_wrap > div > div.dccon_listbox > ul > li')
 
     try:
         target_package = package_search_list[0]  # pick first dccon package (bs4 obj) from search list
     except IndexError as e:  # maybe no search result w/ IndexError?
+        log(from_text(ctx), 'error! (maybe no search result) : ' + str(e))
+        await ctx.channel.send(f'"{package_name}" 디시콘 패키지 정보를 찾을 수 없습니다.')
+    except UnboundLocalError as e:
         log(from_text(ctx), 'error! (maybe no search result) : ' + str(e))
         await ctx.channel.send(f'"{package_name}" 디시콘 패키지 정보를 찾을 수 없습니다.')
     else:
@@ -133,7 +138,7 @@ async def send_dccon(ctx, *args):
                                           'code': ''})
 
         # 에러 핸들링 여기서 해야함
-
+        
         package_detail_json = package_detail_req.json()
 
         '''
@@ -176,6 +181,8 @@ async def send_dccon(ctx, *args):
                 available_dccon_list.append(dccon['title'])
 
             await ctx.channel.send(f'"{package_name}"에서 사용 가능한 디시콘 : ' + ', '.join(available_dccon_list).rstrip(', '))
+            # 디시콘 링크 알려줌
+            await ctx.channel.send(package_search_req.request.url + '#' + target_package_num)
         else:
             succeed = False
             for dccon in package_detail_json['detail']:
@@ -186,7 +193,9 @@ async def send_dccon(ctx, *args):
                     buffer = BytesIO(dccon_img_request.content)
                     filename = package_name + '_' + dccon['title'] + '.' + dccon['ext']
 
-                    await ctx.channel.send(file=File(buffer, filename))
+                    # 디시콘 표기 + 콘 사용자 표시
+                    sender_tag = "<@" + str(ctx.author.id) + ">"
+                    await ctx.channel.send(file=File(buffer, filename), content=sender_tag)
                     succeed = True
                     break
 
