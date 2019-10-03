@@ -182,7 +182,7 @@ async def send_dccon(ctx, *args):
 
             await ctx.channel.send(f'"{package_name}"에서 사용 가능한 디시콘 : ' + ', '.join(available_dccon_list).rstrip(', '))
             # 디시콘 링크 알려줌
-            await ctx.channel.send(package_search_req.request.url + '#' + target_package_num)
+            await ctx.channel.send('미리보기 URL : ' + package_search_req.request.url + '#' + target_package_num)
         else:
             succeed = False
             for dccon in package_detail_json['detail']:
