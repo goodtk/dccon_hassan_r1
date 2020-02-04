@@ -111,7 +111,16 @@ async def send_dccon(ctx, *args):
         package_search_list = package_search_html.select('#right_cont_wrap > div > div.dccon_listbox > ul > li')
 
     try:
-        target_package = package_search_list[0]  # pick first dccon package (bs4 obj) from search list
+        isExactlySameExist = False                                                                                      # 2020-02-04 완전히 동일한 패키지명이 선택되도록 수정.
+        for searched_package in package_search_list:                                                                    # 검색결과 중 디시콘 패키지명과 완전히 일치한 패키지가 있는지 탐색한다.
+            searched_package_name = searched_package.find('strong', {'class' : 'dcon_name'}).string
+            if searched_package_name == package_name:                                                                   # 완전히 동일한 패키지명이 탐색되면 해당 패키지 선택한다.
+                target_package = searched_package
+                isExactlySameExist = True
+                break
+
+        if not isExactlySameExist:                                                                                      # 완전히 동일한 패키지명이 탐색되지 않아 첫번째 패키지를 선택한다.
+            target_package = package_search_list[0]                                                                     # pick first dccon package (bs4 obj) from search list
     except IndexError as e:  # maybe no search result w/ IndexError?
         log(from_text(ctx), 'error! (maybe no search result) : ' + str(e))
         await ctx.channel.send(f'"{package_name}" 디시콘 패키지 정보를 찾을 수 없습니다.')
