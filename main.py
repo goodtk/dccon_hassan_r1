@@ -254,7 +254,6 @@ async def favorite_manage(ctx, *args):
         return
 
     elif args[0] == '삭제':
-        await ctx.channel.send('삭제삭제맨')
         await favorite_delete(ctx, *args)
         return
 
