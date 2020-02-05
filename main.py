@@ -284,7 +284,7 @@ async def favorite_register(ctx, *args):
         log(from_text(ctx), 'favorite_delete cannot register favorite (max)')
         await ctx.channel.send('더 이상 즐겨찾기를 등록할 수 없습니다. 즐겨찾기 삭제 후 시도해주세요.')
         return
-    elif registed_count > 0 and find_favorite(ctx, shortcut_name)[0] != '':     # 해당 단축어가 이미 등록되어있는지 체크
+    elif registed_count > 0 and is_exactly_same_exist(ctx, shortcut_name):     # 해당 단축어가 이미 등록되어있는지 체크
         log(from_text(ctx), f'favorite_delete "{shortcut_name}" already exists.')
         await ctx.channel.send('해당 단축명으로 등록된 즐겨찾기가 이미 존재합니다.')
         return 
@@ -414,8 +414,25 @@ def get_favorite_count(ctx):
 
     return count
 
+# 등록 시 중복 체크
+def is_exactly_same_exist(ctx, shortcut_name):
+    filePath = 'favorites/' + str(ctx.author.id) +'.txt'
 
-# 즐겨찾기 사용 / 등록 시 중복 체크
+    resultArr = False
+
+    file = open(filePath, mode='rt', encoding='utf-8')
+    lines = file.readlines()
+    for line in lines:
+        splited = line.split('\t')
+        if splited[0] == shortcut_name:
+            log(from_text(ctx), f'favorite_register {shortcut_name} is exist.')
+            resultArr = True
+            break
+    file.close()
+
+    return resultArr
+
+# 즐겨찾기 단축어로 탐색, 패키지명과 디시콘명 가져오기. 단축어와 근접한 디시콘명 가져옴
 def find_favorite(ctx, shortcut_name):
     filePath = 'favorites/' + str(ctx.author.id) +'.txt'
 
@@ -425,11 +442,11 @@ def find_favorite(ctx, shortcut_name):
     lines = file.readlines()
     for line in lines:
         splited = line.split('\t')
-        if splited[0] == shortcut_name:
-            log(from_text(ctx), 'favorite_register shortcut_name found')
+        if shortcut_name in splited[0]:
             resultArr[0] = splited[1]                    # 반환할 패키지명 저장
             resultArr[1] = splited[2].rstrip('\n')       # 반환할 디시콘명 저장
-            break
+            if shortcut_name == splited[0]:              # 단축어와 완전히 동일하면 탐색종료
+                break
     file.close()
 
     return resultArr
