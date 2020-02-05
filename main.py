@@ -29,7 +29,7 @@ DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
 FAVORITE_PATH = 'favorites/'
-FAVORITE_MAX = 30
+FAVORITE_MAX = 50
 
 
 bot = commands.Bot(command_prefix='!')
@@ -228,7 +228,7 @@ async def favorite_manage(ctx, *args):
     if not args:
         log(from_text(ctx), 'favorite_help command')
         embed = Embed(title='안녕하세요! 디시콘 핫산이에요!',
-                  description=f'즐겨찾기는 개인당 {FAVORITE_MAX}개 까지만 등록 가능해요.\n단축명은 10글자까지만 가능해요.(띄워쓰기 불가)\n사용가능한 명령어로 등록, 목록, 삭제, 사용이 있어요.',
+                  description=f'즐겨찾기는 개인당 {FAVORITE_MAX}개 까지만 등록 가능해요.\n띄워쓰기를 포함하려면 "로 묶어주세요.\n사용가능한 명령어로 등록, 목록, 삭제, 사용이 있어요.',
                   color=EMBED_COLOR)
         embed.add_field(name='즐겨찾기 등록', value='!즐찾 등록 "단축명" "디시콘 패키지 제목" "콘 이름"', inline=False)
         embed.add_field(name='사용 예시', value='!즐찾 멘15 멘헤라콘 15, !즐찾 마히리메꿀잠 "마히로콘 리메이크" 꿀잠 , !즐찾 좋은말콘응원 "좋은말콘 스페셜 에디션" 응원, ...', inline=False)
@@ -343,10 +343,6 @@ async def favorite_delete(ctx, *args):
 
     shortcut_name = args[1]
 
-    #if find_favorite(ctx, shortcut_name)[0] == '':     # 해당 단축어가 존재하는지 체크
-    #    await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록에는 해당 단축어가 존재하지 않습니다.')
-    #    return 
-
     file = open(filePath, mode='rt', encoding='utf-8')
     lines = file.readlines()
 
@@ -391,7 +387,7 @@ async def favorite_send(ctx, *args):
         await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
         return
 
-    send_dccon(ctx, res)
+    await send_dccon(ctx, *res)
 
 
 # 즐겨찾기 관리 폴더 생성
