@@ -28,6 +28,8 @@ DCCON_SEARCH_URL = 'https://dccon.dcinside.com/hot/1/title/'
 DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
+FAVORITE_PATH = 'favorites/'
+FAVORITE_MAX = 30
 
 
 bot = commands.Bot(command_prefix='!')
@@ -56,7 +58,8 @@ async def help(ctx):
     embed.add_field(name='사용 방법', value='!콘 "디시콘 패키지 제목" "콘 이름"', inline=False)
     embed.add_field(name='사용 예시 1', value='!콘 멘헤라콘 15, !콘 "마히로콘 리메이크" 꿀잠, !콘 "좋은말콘 스페셜 에디션" 응원, ...', inline=False)
     embed.add_field(name='사용 예시 2', value='!콘 "나나히라 라인", !콘 카구야는인사받고싶어, ... (디시콘 패키지 이름만 입력 시 디시콘 목록 출력)', inline=False)
-    embed.add_field(name='명령어', value='!콘, !도움, !대하여, !초대링크', inline=False)
+    embed.add_field(name='명령어', value='!콘, !도움, !대하여, !초대링크, !ㅋ, !즐찾', inline=False)
+
     embed.set_footer(text='그코좆망겜')
     await ctx.channel.send(embed=embed)
 
@@ -218,6 +221,234 @@ async def send_dccon(ctx, *args):
     #
     ############################################################################################################
 
+
+# 즐겨찾기
+@bot.command(name='즐찾')
+async def favorite_manage(ctx, *args):
+    if not args:
+        log(from_text(ctx), 'favorite_help command')
+        embed = Embed(title='안녕하세요! 디시콘 핫산이에요!',
+                  description=f'즐겨찾기는 개인당 {FAVORITE_MAX}개 까지만 등록 가능해요.\n단축명은 10글자까지만 가능해요.(띄워쓰기 불가)\n사용가능한 명령어로 등록, 목록, 삭제, 사용이 있어요.',
+                  color=EMBED_COLOR)
+        embed.add_field(name='즐겨찾기 등록', value='!즐찾 등록 "단축명" "디시콘 패키지 제목" "콘 이름"', inline=False)
+        embed.add_field(name='사용 예시', value='!즐찾 멘15 멘헤라콘 15, !즐찾 마히리메꿀잠 "마히로콘 리메이크" 꿀잠 , !즐찾 좋은말콘응원 "좋은말콘 스페셜 에디션" 응원, ...', inline=False)
+        embed.add_field(name='즐겨찾기 목록 확인', value='!즐찾 목록', inline=False)
+        embed.add_field(name='즐겨찾기 삭제', value='!즐찾 삭제 "단축명"', inline=False)
+        embed.add_field(name='사용 예시', value='!즐찾 삭제 멘15, !즐찾 삭제 마히리메꿀잠, !즐찾 삭제 좋은말콘응원, ...', inline=False)
+        embed.add_field(name='즐겨찾기 사용', value='!ㅋ "단축명"', inline=False)
+        embed.add_field(name='사용 예시', value='!ㅋ 멘15, !ㅋ 마히리메꿀잠, !ㅋ 좋은말콘응원, ...', inline=False)
+        embed.set_footer(text='몬헌좆망겜')
+        await ctx.channel.send(embed=embed)
+        return
+
+    if not create_favorite_path():                                                               # 즐겨찾기 폴더가 존재하지 않으면 생성. 생성 실패시 오류메시지 출력.
+        await ctx.channel.send('즐겨찾기 폴더 생성에 실패하였습니다. 관리자에게 문의하세요!')
+        return
+    
+    if args[0] == '등록':
+        await favorite_register(ctx, *args);
+        return
+
+    elif args[0] == '목록':
+        await favorite_list(ctx)
+        return
+
+    elif args[0] == '삭제':
+        await ctx.channel.send('삭제삭제맨')
+        await favorite_delete(ctx, *args)
+        return
+
+    elif args[0] == '사용':
+        await ctx.channel.send('즐겨찾기 사용은 !ㅋ "단축명" 으로 사용해주세요.')
+        return
+    
+    else:
+        await ctx.channel.send('올바르지 않은 명령어입니다. 사용법을 참고해주세요. (!즐찾)')
+
+
+# 즐겨찾기 등록
+async def favorite_register(ctx, *args):
+    log(from_text(ctx), 'favorite_register command')
+
+    if not len(args) == 4:
+        log(from_text(ctx), 'favorite_register wrong arg count')
+        await ctx.channel.send('인자수가 올바르지 않습니다. 사용법을 참고해주세요. (!즐찾)')
+        return
+
+    shortcut_name = args[1]
+    package_name = args[2]
+    dccon_name = args[3]
+
+    registed_count = get_favorite_count(ctx)
+
+    if registed_count >= FAVORITE_MAX:                                          # 즐겨찾기 등록횟수 체크
+        log(from_text(ctx), 'favorite_delete cannot register favorite (max)')
+        await ctx.channel.send('더 이상 즐겨찾기를 등록할 수 없습니다. 즐겨찾기 삭제 후 시도해주세요.')
+        return
+    elif registed_count > 0 and find_favorite(ctx, shortcut_name)[0] != '':     # 해당 단축어가 이미 등록되어있는지 체크
+        log(from_text(ctx), f'favorite_delete "{shortcut_name}" already exists.')
+        await ctx.channel.send('해당 단축명으로 등록된 즐겨찾기가 이미 존재합니다.')
+        return 
+
+    filePath = 'favorites/' + str(ctx.author.id) +'.txt'
+    file = open(filePath, mode='at', encoding='utf-8')
+    file.write(shortcut_name + '\t' + package_name + '\t' + dccon_name + '\n')
+    file.close()
+
+    await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기가 등록되었습니다. (등록된 즐겨찾기 수 : {registed_count + 1})')
+    return
+
+
+# 즐겨찾기 목록 조회
+async def favorite_list(ctx):
+    log(from_text(ctx), 'favorite_list command')
+    
+    filePath = 'favorites/' + str(ctx.author.id) +'.txt'
+
+    if not favorite_isPathExist(filePath):
+        await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
+        return
+
+    favorite_lists = '\n'
+    cnt = 0
+
+    file = open(filePath, mode='rt', encoding='utf-8')
+    lines = file.readlines()
+    for line in lines:
+        cnt += 1
+        favorite_lists += str(cnt) + '\t' + line
+    file.close()
+
+    # 즐겨찾기 목록 표시 + 사용자 표시
+    sender_tag = '<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록이에요. ({cnt}/{FAVORITE_MAX})\n'
+    header = '#\t단축명\t패키지명\t디시콘명'
+
+    await ctx.channel.send(sender_tag + header + favorite_lists)
+
+
+# 즐겨찾기 삭제
+async def favorite_delete(ctx, *args):
+    log(from_text(ctx), 'favorite_delete command')
+
+    if not len(args) == 2:
+        log(from_text(ctx), 'favorite_delete wrong arg count')
+        await ctx.channel.send('인자수가 올바르지 않습니다. 사용법을 참고해주세요. (!즐찾)')
+        return
+
+    filePath = 'favorites/' + str(ctx.author.id) +'.txt'
+
+    if not favorite_isPathExist(filePath):
+        await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
+        return
+
+    shortcut_name = args[1]
+
+    #if find_favorite(ctx, shortcut_name)[0] == '':     # 해당 단축어가 존재하는지 체크
+    #    await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록에는 해당 단축어가 존재하지 않습니다.')
+    #    return 
+
+    file = open(filePath, mode='rt', encoding='utf-8')
+    lines = file.readlines()
+
+    new_lines = ''
+    isExist = False;
+
+    for line in lines:
+        splited = line.split('\t')
+        if splited[0] == shortcut_name:
+            isExist = True
+        else:
+            new_lines += line
+
+    file.close()
+
+    if isExist:
+        file = open(filePath, mode='wt', encoding='utf-8')
+        file.writelines(new_lines)
+        file.close()
+
+        log(from_text(ctx), f'favorite_delete "{shortcut_name}" deleted')
+        await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어가 삭제되었습니다.')
+    else:
+        log(from_text(ctx), f'favorite_delete "{shortcut_name}" cannot found')
+        await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
+
+# 즐겨찾기 사용
+@bot.command(name='ㅋ')
+async def favorite_send(ctx, *args):
+    log(from_text(ctx), 'favorite_send command')
+
+    if not len(args) == 1:
+        log(from_text(ctx), 'favorite_send wrong arg count')
+        await ctx.channel.send('인자수가 올바르지 않습니다. 사용법을 참고해주세요. (!즐찾)')
+        return
+
+    shortcut_name = args[0]
+
+    res = find_favorite(ctx, shortcut_name)
+    if res[0] == '':
+        log(from_text(ctx), f'favorite_send "{shortcut_name}" cannot found')
+        await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
+        return
+
+    send_dccon(ctx, res)
+
+
+# 즐겨찾기 관리 폴더 생성
+def create_favorite_path():
+    try:
+        if not(os.path.isdir(FAVORITE_PATH)):                # favorites 폴더가 없으면 생성
+            os.makedirs(os.path.join(FAVORITE_PATH))
+        return True
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            log(from_text(ctx), 'failed to create favorite directory!')
+            return False
+
+
+# 등록된 즐겨찾기 개수 조회
+def get_favorite_count(ctx):
+    filePath = 'favorites/' + str(ctx.author.id) +'.txt'
+
+    if not favorite_isPathExist(filePath):                  # 즐겨찾기 목록이 존재하지 않으면 0 반환
+        return 0
+
+    file = open(filePath, mode='rt', encoding='utf-8')
+    count = len(file.readlines())
+    file.close()
+
+    return count
+
+
+# 즐겨찾기 사용 / 등록 시 중복 체크
+def find_favorite(ctx, shortcut_name):
+    filePath = 'favorites/' + str(ctx.author.id) +'.txt'
+
+    resultArr = ['', '']
+
+    file = open(filePath, mode='rt', encoding='utf-8')
+    lines = file.readlines()
+    for line in lines:
+        splited = line.split('\t')
+        if splited[0] == shortcut_name:
+            log(from_text(ctx), 'favorite_register shortcut_name found')
+            resultArr[0] = splited[1]                    # 반환할 패키지명 저장
+            resultArr[1] = splited[2].rstrip('\n')       # 반환할 디시콘명 저장
+            break
+    file.close()
+
+    return resultArr
+
+
+# 즐겨찾기 관리 폴더가 있는지, 해당 파일이 있는지 체크함.
+def favorite_isPathExist(filePath):
+    if not(os.path.isdir(FAVORITE_PATH)):
+        return False
+
+    if not os.path.exists(filePath):
+        return False
+
+    return True
 
 @bot.event
 async def on_command_error(ctx, error):
