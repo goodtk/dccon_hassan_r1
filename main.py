@@ -29,7 +29,7 @@ DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
 FAVORITE_PATH = os.path.abspath('favorites/') + '\\'
-FAVORITE_MAX = 100
+FAVORITE_MAX = 200
 
 
 bot = commands.Bot(command_prefix='!')
@@ -340,7 +340,7 @@ async def show_favorites(ctx):
     while True:
         splited_msg = msg[start:end]
         splited_len = len(splited_msg)
-        await ctx.channel.send(splited_msg)
+        await ctx.author.send(splited_msg)
 
         left_len = len(msg[end:])
 
@@ -348,7 +348,7 @@ async def show_favorites(ctx):
             break
 
         if left_len < 2000:
-            await ctx.channel.send(msg[end:])
+            await ctx.author.send(msg[end:])
             break
 
         else:
