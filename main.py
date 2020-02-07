@@ -1,5 +1,7 @@
 import requests
 import os
+import urllib
+
 from datetime import datetime
 from io import BytesIO
 from bs4 import BeautifulSoup
@@ -7,6 +9,7 @@ from discord import Game, Embed, File
 from discord.ext import commands
 from dotenv import load_dotenv
 from requests import get
+from urllib import parse
 
 load_dotenv()  # load bot token
 
@@ -107,7 +110,10 @@ async def send_dccon(ctx, *args):
 
     s = requests.Session()
 
-    package_search_req = s.get(DCCON_SEARCH_URL + package_name)
+    package_name_encoded = urllib.parse.quote(package_name)                                                             # 2020-02-07 패키지명을 URL 인코딩하도록 수정하였음.
+    package_search_url = DCCON_SEARCH_URL + package_name_encoded
+
+    package_search_req = s.get(package_search_url)
     package_search_html = BeautifulSoup(package_search_req.text, 'html.parser')
     package_search_is_empty = package_search_html.select('#right_cont_wrap > div > div.dccon_search_none > p > span')   # 검색결과가 없는경우 체크
     if not package_search_is_empty:
