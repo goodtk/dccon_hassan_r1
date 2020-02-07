@@ -32,7 +32,7 @@ DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
 #FAVORITE_PATH = os.path.abspath('favorites') + '\\'
-FAVORITE_PATH = os.path.abspath(os.getcwd()) + '\\favorites\\'
+FAVORITE_PATH = os.path.abspath(os.getcwd()) + '/favorites/'
 FAVORITE_MAX = 200
 
 
@@ -443,7 +443,7 @@ def is_favorite_path_exist():
 async def create_favorite_path(ctx):
     try:
         if not(os.path.isdir(FAVORITE_PATH)):                # favorites 폴더가 없으면 생성
-            log(from_text(ctx), 'creating favorite directory...')
+            log(from_text(ctx), f'creating favorite directory at {FAVORITE_PATH}')
             os.makedirs(os.path.join(FAVORITE_PATH))
             log(from_text(ctx), f'favorite directory created at {FAVORITE_PATH}')
     except OSError as e:
