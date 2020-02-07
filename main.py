@@ -31,7 +31,8 @@ DCCON_SEARCH_URL = 'https://dccon.dcinside.com/hot/1/title/'
 DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
-FAVORITE_PATH = os.path.abspath('favorites/') + '\\'
+#FAVORITE_PATH = os.path.abspath('favorites') + '\\'
+FAVORITE_PATH = os.path.abspath(os.getcwd()) + '\\favorites\\'
 FAVORITE_MAX = 200
 
 
