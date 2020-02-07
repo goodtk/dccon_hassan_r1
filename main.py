@@ -252,8 +252,8 @@ async def favorite_manage(ctx, *args):
         await ctx.channel.send(embed=embed)
         return
 
-    if not create_favorite_path():                                                               # 즐겨찾기 폴더가 존재하지 않으면 생성. 생성 실패시 오류메시지 출력.
-        await ctx.channel.send('즐겨찾기 폴더 생성에 실패하였습니다. 관리자에게 문의하세요!')
+    if not is_favorite_path_exist():
+        await create_favorite_path(ctx)                                        # 즐겨찾기 폴더가 존재하지 않으면 생성. 생성 실패시 오류메시지 출력.
     
     if args[0] == '추가':
         await add_favorite(ctx, *args);
@@ -433,16 +433,23 @@ async def send_favorite(ctx, *args):
     await send_dccon(ctx, *res)
 
 
+def is_favorite_path_exist():
+    if os.path.isdir(FAVORITE_PATH):
+        return True
+    else:
+        return False
+
 # 즐겨찾기 관리 폴더 생성
-def create_favorite_path():
+async def create_favorite_path(ctx):
     try:
         if not(os.path.isdir(FAVORITE_PATH)):                # favorites 폴더가 없으면 생성
+            log(from_text(ctx), 'creating favorite directory...')
             os.makedirs(os.path.join(FAVORITE_PATH))
-        return True
+            log(from_text(ctx), f'favorite directory created at {FAVORITE_PATH}')
     except OSError as e:
         if e.errno != errno.EEXIST:
             log(from_text(ctx), 'failed to create favorite directory!')
-            return False
+            await ctx.channel.send('즐겨찾기 폴더 생성에 실패하였습니다. 관리자에게 문의하세요!')
 
 
 # 추가된 즐겨찾기 개수 조회
