@@ -9,7 +9,7 @@ Heroku 무료 Dyno에서 테스트용으로 돌아가고 있는 봇입니다. �
 ## 설치 및 실행
 ```
 $ pip3 install -r requirements.txt
-$ echo "BOT_TOKEN=YOUR_BOT_TOKEN_HERE" > .env
+env_example.txt 참고하여 .env 파일 생성
 $ python3 main.py
 ```
 
@@ -38,3 +38,4 @@ $ python3 main.py
 * 패키지만 입력했을 때 패키지 URL을 표시하도록 함.
 * 패키지명이 완전히 동일한 패키지가 선택되도록 수정함.
 * 즐겨찾기 기능 추가 (매크로) [BETA]
+* 캐싱
