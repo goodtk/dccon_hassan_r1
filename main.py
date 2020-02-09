@@ -1,6 +1,8 @@
 import requests
 import os
 import urllib
+import io
+import shutil
 
 from datetime import datetime
 from io import BytesIO
@@ -37,8 +39,13 @@ DCCON_SEARCH_URL = 'https://dccon.dcinside.com/hot/1/title/'
 DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
+OWNER_ID = os.getenv('OWNER_ID')
+
 FAVORITE_PATH = os.path.abspath(os.getcwd()) + '/favorites/'
-FAVORITE_MAX = 200
+FAVORITE_MAX = int(os.getenv('FAVORITE_MAX'))
+
+CACHE_PATH = os.path.abspath(os.getcwd()) + '/.cache/'
+CACHE_MAX = int(os.getenv('CACHE_MAX'))
 
 
 bot = commands.Bot(command_prefix='!')
@@ -134,8 +141,10 @@ async def send_dccon(ctx, *args):
                 isExactlySameExist = True
                 break
 
-        if not isExactlySameExist:                                                                                      # 완전히 동일한 패키지명이 탐색되지 않아 첫번째 패키지를 선택한다.
-            target_package = package_search_list[0]                                                                     # pick first dccon package (bs4 obj) from search list
+        if not isExactlySameExist:
+            target_package = package_search_list[0]                                                                     # 완전히 동일한 패키지명이 탐색되지 않음.(pick first dccon package (bs4 obj) from search list)
+
+        target_package_name = target_package.find('strong', {'class' : 'dcon_name'}).string                             # 대상 패키지명 추출
     except IndexError as e:  # maybe no search result w/ IndexError?
         log(from_text(ctx), 'error! (maybe no search result) : ' + str(e))
         await ctx.channel.send(f'"{package_name}" 디시콘 패키지 정보를 찾을 수 없습니다.')
@@ -143,6 +152,25 @@ async def send_dccon(ctx, *args):
         log(from_text(ctx), 'error! (maybe no search result) : ' + str(e))
         await ctx.channel.send(f'"{package_name}" 디시콘 패키지 정보를 찾을 수 없습니다.')
     else:
+        ## 캐시 도입 2020-02-09
+        if not list_print_mode:
+            resultArr = use_cache(target_package_name, idx)
+
+            cache_name = resultArr[0]
+            cache_url = resultArr[1]
+
+            if not cache_name == '':
+                buffer=''
+
+                with open(CACHE_PATH + cache_name, 'rb') as fin:
+                    buffer = io.BytesIO(fin.read())
+
+                sender_tag = "<@" + str(ctx.author.id) + ">"
+                await ctx.channel.send(file=File(buffer, cache_name), content=sender_tag)
+                log(from_text(ctx), 'succeed(cached)')
+                return
+
+
         target_package_num = target_package.get('package_idx')  # get dccon number of target dccon package
         log(from_text(ctx), 'processing with: ' + target_package_num)
 
@@ -215,12 +243,16 @@ async def send_dccon(ctx, *args):
                     dccon_img_request = s.get(dccon_img, headers={'Referer': DCCON_HOME_URL})
 
                     buffer = BytesIO(dccon_img_request.content)
-                    filename = package_name + '_' + dccon['title'] + '.' + dccon['ext']
+                    cache = BytesIO(dccon_img_request.content)
+                    file_name = package_name + '_' + dccon['title'] + '.' + dccon['ext']
+
+                    await acc_cache(package_name, idx, dccon_img, file_name, cache)
 
                     # 디시콘 표기 + 콘 사용자 표시
                     sender_tag = "<@" + str(ctx.author.id) + ">"
-                    await ctx.channel.send(file=File(buffer, filename), content=sender_tag)
+                    await ctx.channel.send(file=File(buffer, file_name), content=sender_tag)
                     succeed = True
+                    print('총 시간(캐시미사용) : ', time.time() - start, 's')
                     break
 
             if succeed:
@@ -230,9 +262,9 @@ async def send_dccon(ctx, *args):
 
                 await ctx.channel.send(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 찾지 못했습니다.')
                 await ctx.channel.send('인자로 패키지 이름만 넘길 경우 사용 가능한 디시콘 목록이 출력됩니다.')
-    #
-    ############################################################################################################
 
+############################################################################################################
+############################################################################################################
 
 # 즐겨찾기
 @bot.command(name='즐찾')
@@ -257,8 +289,9 @@ async def favorite_manage(ctx, *args):
         await ctx.channel.send(embed=embed)
         return
 
-    if not is_favorite_path_exist():
-        await create_favorite_path(ctx)                                        # 즐겨찾기 폴더가 존재하지 않으면 생성. 생성 실패시 오류메시지 출력.
+    if not os.path.isdir(FAVORITE_PATH):
+        if not create_directory(FAVORITE_PATH):                                        # 즐겨찾기 폴더가 존재하지 않으면 생성. 생성 실패시 오류메시지 출력.
+            await ctx.channel.send('경로 생성에 실패하였습니다. 관리자에게 문의하세요!')
     
     if args[0] == '추가':
         await add_favorite(ctx, *args);
@@ -325,7 +358,7 @@ async def show_favorites(ctx):
     
     file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
 
-    if not favorite_isPathExist(file_path):
+    if not os.path.exists(file_path):
         await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
@@ -380,7 +413,7 @@ async def delete_favorite(ctx, *args):
 
     file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
 
-    if not favorite_isPathExist(file_path):
+    if not os.path.exists(file_path):
         await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
@@ -425,7 +458,7 @@ async def send_favorite(ctx, *args):
     shortcut_name = args[0]
 
     file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
-    if not favorite_isPathExist(file_path):
+    if not os.path.exists(file_path):
         await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
@@ -438,30 +471,11 @@ async def send_favorite(ctx, *args):
     await send_dccon(ctx, *res)
 
 
-def is_favorite_path_exist():
-    if os.path.isdir(FAVORITE_PATH):
-        return True
-    else:
-        return False
-
-# 즐겨찾기 관리 폴더 생성
-async def create_favorite_path(ctx):
-    try:
-        if not(os.path.isdir(FAVORITE_PATH)):                # favorites 폴더가 없으면 생성
-            log(from_text(ctx), f'creating favorite directory at {FAVORITE_PATH}')
-            os.makedirs(os.path.join(FAVORITE_PATH))
-            log(from_text(ctx), f'favorite directory created at {FAVORITE_PATH}')
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            log(from_text(ctx), 'failed to create favorite directory!')
-            await ctx.channel.send('즐겨찾기 폴더 생성에 실패하였습니다. 관리자에게 문의하세요!')
-
-
 # 추가된 즐겨찾기 개수 조회
 def get_favorite_count(user_id):
     file_path = FAVORITE_PATH + str(user_id) +'.txt'
 
-    if not favorite_isPathExist(file_path):                  # 즐겨찾기 목록이 존재하지 않으면 0 반환
+    if not os.path.exists(file_path):                  # 즐겨찾기 목록이 존재하지 않으면 0 반환
         return 0
 
     file = open(file_path, mode='rt', encoding='utf-8')
@@ -488,7 +502,8 @@ def is_exactly_same_exist(ctx, shortcut_name):
 
     return resultArr
 
-# 즐겨찾기 단축어로 탐색, 패키지명과 디시콘명 가져오기. 단축어와 근접한 디시콘명 가져옴
+# 즐겨찾기 단축어로 탐색
+# 패키지명과 디시콘명 가져오기. 단축어와 근접한 디시콘명 가져옴
 def find_favorite(ctx, shortcut_name):
     file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
 
@@ -507,16 +522,6 @@ def find_favorite(ctx, shortcut_name):
 
     return resultArr
 
-
-# 즐겨찾기 관리 폴더가 있는지, 해당 파일이 있는지 체크함.
-def favorite_isPathExist(file_path):
-    if not(os.path.isdir(FAVORITE_PATH)):
-        return False
-
-    if not os.path.exists(file_path):
-        return False
-
-    return True
 
 # 즐겨찾기 백업
 @bot.command(pass_context=True)
@@ -540,7 +545,7 @@ async def send_favorites(ctx, user_id):
     fileName = user_id + '.txt'
     file_path = FAVORITE_PATH + fileName
 
-    if (not favorite_isPathExist(file_path)) or (get_favorite_count(user_id) == 0):
+    if (not os.path.exists(file_path)) or (get_favorite_count(user_id) == 0):
         await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
@@ -575,11 +580,138 @@ async def reset_favorites(ctx, *args):
     user_id = str(ctx.author.id)
     file_path = FAVORITE_PATH + user_id + '.txt'
 
-    if favorite_isPathExist(file_path):
+    if os.path.exists(file_path):
         os.remove(file_path)
 
     log(from_text(ctx), 'reset_favorites reset ' + user_id + '\'s favorites')
     await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록을 리셋했습니다.')
+
+############################################################################################################
+############################################################################################################
+
+# 캐시 클리어
+@bot.command(name='캐시클리어')
+async def clear_cache(ctx, *args):
+    user_id = str(ctx.author.id)
+
+    if not (OWNER_ID == user_id):
+        log(from_text(ctx), f'{user_id} attempted to clear cache.')
+        await ctx.channel.send('권한이 없습니다. 관리자에게 문의하세요.')
+        return
+
+    if os.path.isdir(CACHE_PATH) and not os.path.islink(CACHE_PATH):
+        shutil.rmtree(CACHE_PATH)
+        log(from_text(ctx), f'cache cleared by shutil.rmtree({CACHE_PATH})')
+    elif os.path.exists(CACHE_PATH):
+        os.remove(CACHE_PATH)
+        log(from_text(ctx), f'cache cleared by os.remove({CACHE_PATH})')
+
+    await ctx.channel.send('캐시를 클리어 했습니다.')
+
+# 캐시 추가
+async def acc_cache(package_name, idx, url, file_name, bytes):
+    if not os.path.isdir(CACHE_PATH):
+        if not create_directory(CACHE_PATH):                                        # 캐시 폴더가 존재하지 않으면 생성. 생성 실패시 오류메시지 출력.
+            log('SYSTEM', 'creating cache directory failed')
+
+    # 캐시 개수 체크
+    if get_cache_count() >= CACHE_MAX:
+        remove_lastest_cache()
+
+    # 이미지 저장
+    with open(CACHE_PATH + f'{file_name}','wb') as out: ## Open temporary file as bytes
+        out.write(bytes.read())                         ## Read bytes into file
+
+    # 캐시 인덱스에 append
+    # 캐시 인덱스에 중복추가안하게 해라
+    file_path = CACHE_PATH + 'cacheIdx.txt'
+    file = open(file_path, mode='at', encoding='utf-8')
+    file.write(package_name + '\t' + idx + '\t' + file_name + '\t' + url + '\n')
+    file.close()
+
+
+# 캐시 탐색
+# 디시콘 패키지명과 idx(디시콘명)으로 탐색해서, 있으면 파일명과 url 반환
+def use_cache(package_name, idx):
+    file_path = CACHE_PATH + 'cacheIdx.txt'
+
+    resultArr = ['', '']
+
+    if not os.path.isdir(CACHE_PATH):
+        return resultArr
+
+    file = open(file_path, mode='rt', encoding='utf-8')
+    lines = file.readlines()
+    for line in lines:
+        splited = line.split('\t')
+        if (package_name == splited[0]) and (idx == splited[1]):
+            resultArr[0] = splited[2]                               # 반환할 디시콘 파일명
+            resultArr[1] = splited[3].rstrip('\n')                  # 반환할 디시콘 url
+            break
+    file.close()
+
+    return resultArr
+
+# 캐시 개수 조회
+def get_cache_count():
+    file_path = CACHE_PATH + 'cacheIdx.txt'
+
+    if not os.path.exists(file_path):                  # 즐겨찾기 목록이 존재하지 않으면 0 반환
+        return 0
+
+    file = open(file_path, mode='rt', encoding='utf-8')
+    count = len(file.readlines())
+    file.close()
+
+    return count
+
+# 캐시 리스트에서 한줄 삭제 + 이미지 삭제
+def remove_lastest_cache():
+    file_path = CACHE_PATH + 'cacheIdx.txt'
+    file = open(file_path, mode='rt', encoding='utf-8')
+
+    # 헤드(가장 오래된 캐시) 탐색
+    lastest_cache = file.readline()
+    splited = lastest_cache.split('\t')
+    lastest_cache_path = CACHE_PATH + splited[2]
+    
+    # 나머지줄 로드
+    lines = file.readlines()
+
+    new_lines = ''
+    isExist = False;
+
+    for line in lines:
+        new_lines += line
+
+    file.close()
+
+    # 나머지줄만 저장
+    file = open(file_path, mode='wt', encoding='utf-8')
+    file.writelines(new_lines)
+    file.close()
+
+    # 가장 오래된 캐시 삭제
+    if os.path.exists(lastest_cache_path):
+        os.remove(lastest_cache_path)
+
+
+# 폴더 생성
+def create_directory(path):
+    try:
+        if not(os.path.isdir(path)):
+            log('SYSTEM', f'creating directory at {path}')
+            os.makedirs(os.path.join(path))
+            log('SYSTEM', f'directory created at {path}')
+        
+        return True
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            log(from_text(ctx), f'failed to create directory at {path}!')
+        
+        return False
+
+
 
 @bot.event
 async def on_command_error(ctx, error):
