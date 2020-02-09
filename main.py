@@ -252,7 +252,6 @@ async def send_dccon(ctx, *args):
                     sender_tag = "<@" + str(ctx.author.id) + ">"
                     await ctx.channel.send(file=File(buffer, file_name), content=sender_tag)
                     succeed = True
-                    print('총 시간(캐시미사용) : ', time.time() - start, 's')
                     break
 
             if succeed:
