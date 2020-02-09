@@ -18,7 +18,13 @@ def from_text(ctx):
     # msg_fr = msg.server.name + ' > ' + msg.channel.name + ' > ' + msg.author.name
     # msg.server --> msg.guild
     # https://discordpy.readthedocs.io/en/latest/migrating.html#server-is-now-guild
-    return f'{ctx.guild.name} > {ctx.channel.name} > {ctx.author.name}'
+    
+    channel_type = ctx.channel.type.value
+    if channel_type == 1:
+        return f'DM > {ctx.author.name}'
+
+    else:
+        return f'{ctx.guild.name} > {ctx.channel.name} > {ctx.author.name}'
 
 
 def log(fr, text):
@@ -31,7 +37,6 @@ DCCON_SEARCH_URL = 'https://dccon.dcinside.com/hot/1/title/'
 DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
-#FAVORITE_PATH = os.path.abspath('favorites') + '\\'
 FAVORITE_PATH = os.path.abspath(os.getcwd()) + '/favorites/'
 FAVORITE_MAX = 200
 
