@@ -63,6 +63,10 @@ async def send_dccon(ctx, *args):
 async def on_ready():
     await bot.change_presence(activity=Game(name='!도움'))
     log('SYSTEM', 'Bot ready')
+    log('SYSTEM', f'BOT_TOKEN : {BOT_TOKEN}')
+    log('SYSTEM', f'OWNER_ID : {OWNER_ID}')
+    log('SYSTEM', f'FAVORITE_MAX : {FAVORITE_MAX}')
+    log('SYSTEM', f'CACHE_MAX : {CACHE_MAX}')
 
 
 @bot.command(name='도움')
@@ -121,28 +125,27 @@ async def send_dccon(ctx, *args):
 
     # TODO: 변수명 간단히
 
-    s = requests.Session()
+    session = requests.Session()
 
     package_name_encoded = urllib.parse.quote(package_name)                                                             # 2020-02-07 패키지명을 URL 인코딩하도록 수정하였음.
     package_search_url = DCCON_SEARCH_URL + package_name_encoded
 
-    package_search_req = s.get(package_search_url)
+    package_search_req = session.get(package_search_url)
     package_search_html = BeautifulSoup(package_search_req.text, 'html.parser')
     package_search_is_empty = package_search_html.select('#right_cont_wrap > div > div.dccon_search_none > p > span')   # 검색결과가 없는경우 체크
-    if not package_search_is_empty:
-        package_search_list = package_search_html.select('#right_cont_wrap > div > div.dccon_listbox > ul > li')
 
     try:
-        isExactlySameExist = False                                                                                      # 2020-02-04 완전히 동일한 패키지명이 선택되도록 수정.
-        for searched_package in package_search_list:                                                                    # 검색결과 중 디시콘 패키지명과 완전히 일치한 패키지가 있는지 탐색한다.
-            searched_package_name = searched_package.find('strong', {'class' : 'dcon_name'}).string
-            if searched_package_name == package_name:                                                                   # 완전히 동일한 패키지명이 탐색되면 해당 패키지 선택한다.
-                target_package = searched_package
-                isExactlySameExist = True
-                break
+        if package_search_is_empty:
+            raise IndexError
 
-        if not isExactlySameExist:
-            target_package = package_search_list[0]                                                                     # 완전히 동일한 패키지명이 탐색되지 않음.(pick first dccon package (bs4 obj) from search list)
+        package_search_list = package_search_html.select('#right_cont_wrap > div > div.dccon_listbox > ul > li')
+        target_package = dccon_find_exactly_same(package_search_list, package_name)                                     # 2020-02-04 완전히 동일한 패키지명이 선택되도록 수정.
+
+        if target_package == '':
+            target_package = package_search_list[0]                                                                     # 완전히 동일한 패키지명이 탐색되지 않음.
+            log(from_text(ctx), 'pick first dccon package (bs4 obj) from search list')
+        else:
+            log(from_text(ctx), 'exactly same dccon found')
 
         target_package_name = target_package.find('strong', {'class' : 'dcon_name'}).string                             # 대상 패키지명 추출
     except IndexError as e:  # maybe no search result w/ IndexError?
@@ -152,77 +155,10 @@ async def send_dccon(ctx, *args):
         log(from_text(ctx), 'error! (maybe no search result) : ' + str(e))
         await ctx.channel.send(f'"{package_name}" 디시콘 패키지 정보를 찾을 수 없습니다.')
     else:
-        ## 캐시 도입 2020-02-09
-        if not list_print_mode:
-            resultArr = use_cache(target_package_name, idx)
-
-            cache_name = resultArr[0]
-            cache_url = resultArr[1]
-
-            if not cache_name == '':
-                buffer=''
-
-                with open(CACHE_PATH + cache_name, 'rb') as fin:
-                    buffer = io.BytesIO(fin.read())
-
-                sender_tag = "<@" + str(ctx.author.id) + ">"
-                await ctx.channel.send(file=File(buffer, cache_name), content=sender_tag)
-                log(from_text(ctx), 'succeed(cached)')
-                return
-
-
         target_package_num = target_package.get('package_idx')  # get dccon number of target dccon package
         log(from_text(ctx), 'processing with: ' + target_package_num)
 
-        # for i in package_search_req.cookies:
-        #     print(i.name, i.value)
-
-        package_detail_req = s.post(DCCON_DETAILS_URL,
-                                    # content-type: application/x-www-form-urlencoded; charset=UTF-8
-                                    cookies={'ci_c': package_search_req.cookies['ci_c'],
-                                             'PHPSESSID': package_search_req.cookies['PHPSESSID']},
-                                    headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                             'Referer': DCCON_SEARCH_URL + str(package_name.encode('utf-8')),
-                                             'Origin': DCCON_HOME_URL,
-                                             'X-Requested-With': 'XMLHttpRequest'},
-                                    data={'ci_t': package_search_req.cookies['ci_c'],
-                                          'package_idx': target_package_num,
-                                          'code': ''})
-
-        # 에러 핸들링 여기서 해야함
-        
-        package_detail_json = package_detail_req.json()
-
-        '''
-            info /  'package_idx'
-                    'seller_no'
-                    'seller_id'
-                    'title'
-                    'category'
-                    'path'
-                    'description'
-                    'price'
-                    'period'
-                    'icon_cnt'
-                    'state'
-                    'open'
-                    'sale_count'
-                    'reg_date'
-                    'seller_name'
-                    'code'
-                    'seller_type'
-                    'mandoo'
-                    'main_img_path'
-                    'list_img_path'
-                    'reg_date_short'
-                    
-            detail /  () /  'idx'
-                            'package_idx'
-                            'title'
-                            'sort'
-                            'ext'
-                            'path'
-        '''
+        package_detail_json = dccon_get_detail(session, package_search_req, package_name, target_package_num)
 
         # 검색 결과로 바꿔치기
         package_name = package_detail_json['info']['title']
@@ -233,34 +169,158 @@ async def send_dccon(ctx, *args):
                 available_dccon_list.append(dccon['title'])
 
             await ctx.channel.send(f'"{package_name}"에서 사용 가능한 디시콘 : ' + ', '.join(available_dccon_list).rstrip(', '))
-            # 디시콘 링크 알려줌
-            await ctx.channel.send('미리보기 URL : ' + package_search_req.request.url + '#' + target_package_num)
+            await ctx.channel.send('미리보기 URL : ' + package_search_req.request.url + '#' + target_package_num)                       # 디시콘 링크 알려줌
         else:
-            succeed = False
-            for dccon in package_detail_json['detail']:
-                if dccon['title'] == idx:
-                    dccon_img = "http://dcimg5.dcinside.com/dccon.php?no=" + dccon['path']
-                    dccon_img_request = s.get(dccon_img, headers={'Referer': DCCON_HOME_URL})
+            resultArr = await dccon_use_cache(target_package_name, idx)                                                                 # 2020-02-09 캐시에서 탐색
+            cached = False
+            buffer = ''
+            file_name = ''
 
-                    buffer = BytesIO(dccon_img_request.content)
-                    cache = BytesIO(dccon_img_request.content)
-                    file_name = package_name + '_' + dccon['title'] + '.' + dccon['ext']
+            if not resultArr[0] == '':                                                                                                  # 캐시된 이미지가 존재하는 경우
+                cached = True
+                buffer = resultArr[0]
+                file_name = resultArr[1]
+            else:
+                resultArr = ['', '']
+                for dccon in package_detail_json['detail']:
+                    if dccon['title'] == idx:
+                        resultArr = await dccon_download(dccon, session, package_name, idx)
+                        break
 
-                    await acc_cache(package_name, idx, dccon_img, file_name, cache)
+                if not resultArr[0] == '':                                                                                              # 디시콘 받아오는데 성공
+                    buffer = resultArr[0]
+                    file_name = resultArr[1]
+                else:
+                    log(from_text(ctx), 'dccon download failed')
+                    await ctx.channel.send(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 다운받는데 실패하였습니다.')
+                    return
 
-                    # 디시콘 표기 + 콘 사용자 표시
-                    sender_tag = "<@" + str(ctx.author.id) + ">"
-                    await ctx.channel.send(file=File(buffer, file_name), content=sender_tag)
-                    succeed = True
-                    break
+            succeed = await dccon_send_with_tag(ctx, buffer, file_name)
 
             if succeed:
-                log(from_text(ctx), 'succeed')
+                log(from_text(ctx), 'succeed(cached)' if cached else 'succeed')
             else:
                 log(from_text(ctx), 'not found')
 
                 await ctx.channel.send(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 찾지 못했습니다.')
                 await ctx.channel.send('인자로 패키지 이름만 넘길 경우 사용 가능한 디시콘 목록이 출력됩니다.')
+
+############################################################ 모듈화 ############################################################
+
+# 검색결과 중 디시콘 패키지명과 완전히 일치한 패키지가 있는지 탐색
+def dccon_find_exactly_same(package_search_list, package_name):
+    for searched_package in package_search_list:
+        searched_package_name = searched_package.find('strong', {'class' : 'dcon_name'}).string
+        if searched_package_name == package_name:                                                                   # 완전히 동일한 패키지명이 탐색되면 해당 패키지 선택한다.
+            return searched_package
+    return ''
+
+
+# 로컬 캐시에 디시콘 있으면 버퍼와 파일명 반환
+async def dccon_use_cache(package_name, idx):
+    resultArr = ['', '']
+    cache_file_name = get_cache_file_name(package_name, idx)
+
+    if not cache_file_name == '':
+        cache_file_path = CACHE_PATH + cache_file_name
+        buffer=''
+
+        if not os.path.exists(cache_file_path):                                                                     # 캐시 파일이 존재하지 않는 경우
+            return resultArr
+
+        with open(cache_file_path, 'rb') as fin:
+            buffer = io.BytesIO(fin.read())
+
+        resultArr[0] = buffer
+        resultArr[1] = cache_file_name
+
+    return resultArr
+
+
+# 디시 서버에서 타겟 디시콘의 세부사항 가져옴
+def dccon_get_detail(session, package_search_req, package_name, target_package_num):
+    # for i in package_search_req.cookies:
+    #     print(i.name, i.value)
+
+    package_detail_req = session.post(DCCON_DETAILS_URL,
+                                # content-type: application/x-www-form-urlencoded; charset=UTF-8
+                                cookies={'ci_c': package_search_req.cookies['ci_c'],
+                                            'PHPSESSID': package_search_req.cookies['PHPSESSID']},
+                                headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                            'Referer': DCCON_SEARCH_URL + str(package_name.encode('utf-8')),
+                                            'Origin': DCCON_HOME_URL,
+                                            'X-Requested-With': 'XMLHttpRequest'},
+                                data={'ci_t': package_search_req.cookies['ci_c'],
+                                        'package_idx': target_package_num,
+                                        'code': ''})
+
+    # 에러 핸들링 여기서 해야함
+        
+    package_detail_json = package_detail_req.json()
+
+    '''
+        info /  'package_idx'
+                'seller_no'
+                'seller_id'
+                'title'
+                'category'
+                'path'
+                'description'
+                'price'
+                'period'
+                'icon_cnt'
+                'state'
+                'open'
+                'sale_count'
+                'reg_date'
+                'seller_name'
+                'code'
+                'seller_type'
+                'mandoo'
+                'main_img_path'
+                'list_img_path'
+                'reg_date_short'
+                    
+        detail /  () /  'idx'
+                        'package_idx'
+                        'title'
+                        'sort'
+                        'ext'
+                        'path'
+    '''
+    return package_detail_json
+
+
+# 디시 서버에서 디시콘 다운로드하여 버퍼와 파일명 반환
+async def dccon_download(dccon, session, package_name, idx):
+    resultArr = ['', '']
+
+    try:
+        dccon_img = "http://dcimg5.dcinside.com/dccon.php?no=" + dccon['path']
+        dccon_img_request = session.get(dccon_img, headers={'Referer': DCCON_HOME_URL})
+
+        buffer = BytesIO(dccon_img_request.content)
+        cache = BytesIO(dccon_img_request.content)
+        file_name = package_name + '_' + dccon['title'] + '.' + dccon['ext']
+
+        await acc_cache(package_name, idx, file_name, cache)                     # 캐시에 추가
+    except:
+        return resultArr
+    else:
+        resultArr[0] = buffer
+        resultArr[1] = file_name
+        return resultArr
+
+
+# 요청자의 태그와 디시콘 전송
+async def dccon_send_with_tag(ctx, buffer, file_name):
+    sender_tag = "<@" + str(ctx.author.id) + ">"                             # 디시콘 표기 + 콘 사용자 표시
+    try:
+        await ctx.channel.send(file=File(buffer, file_name), content=sender_tag)
+        return True
+    except:
+        await ctx.channel.send('dccon_send_with_tag : 디시콘 업로드 중 오류 발생.')
+        return False
 
 ############################################################################################################
 ############################################################################################################
@@ -487,7 +547,7 @@ def get_favorite_count(user_id):
 def is_exactly_same_exist(ctx, shortcut_name):
     file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
 
-    resultArr = False
+    exist = False
 
     file = open(file_path, mode='rt', encoding='utf-8')
     lines = file.readlines()
@@ -495,11 +555,11 @@ def is_exactly_same_exist(ctx, shortcut_name):
         splited = line.split('\t')
         if splited[0] == shortcut_name:
             log(from_text(ctx), f'add_favorite {shortcut_name} is exist.')
-            resultArr = True
+            exist = True
             break
     file.close()
 
-    return resultArr
+    return exist
 
 # 즐겨찾기 단축어로 탐색
 # 패키지명과 디시콘명 가져오기. 단축어와 근접한 디시콘명 가져옴
@@ -608,7 +668,7 @@ async def clear_cache(ctx, *args):
     await ctx.channel.send('캐시를 클리어 했습니다.')
 
 # 캐시 추가
-async def acc_cache(package_name, idx, url, file_name, bytes):
+async def acc_cache(package_name, idx, file_name, bytes):
     if not os.path.isdir(CACHE_PATH):
         if not create_directory(CACHE_PATH):                                        # 캐시 폴더가 존재하지 않으면 생성. 생성 실패시 오류메시지 출력.
             log('SYSTEM', 'creating cache directory failed')
@@ -625,37 +685,39 @@ async def acc_cache(package_name, idx, url, file_name, bytes):
     # 캐시 인덱스에 중복추가안하게 해라
     file_path = CACHE_PATH + 'cacheIdx.txt'
     file = open(file_path, mode='at', encoding='utf-8')
-    file.write(package_name + '\t' + idx + '\t' + file_name + '\t' + url + '\n')
+    file.write(package_name + '\t' + idx + '\t' + file_name + '\n')
     file.close()
 
 
 # 캐시 탐색
-# 디시콘 패키지명과 idx(디시콘명)으로 탐색해서, 있으면 파일명과 url 반환
-def use_cache(package_name, idx):
+# 디시콘 패키지명과 idx(디시콘명)으로 탐색해서, 있으면 파일명 반환
+def get_cache_file_name(package_name, idx):
     file_path = CACHE_PATH + 'cacheIdx.txt'
 
-    resultArr = ['', '']
+    cache_file_name = ''
 
     if not os.path.isdir(CACHE_PATH):
-        return resultArr
+        return cache_file_name
 
     file = open(file_path, mode='rt', encoding='utf-8')
     lines = file.readlines()
     for line in lines:
         splited = line.split('\t')
         if (package_name == splited[0]) and (idx == splited[1]):
-            resultArr[0] = splited[2]                               # 반환할 디시콘 파일명
-            resultArr[1] = splited[3].rstrip('\n')                  # 반환할 디시콘 url
+            cache_file_name = splited[2].rstrip('\n')                   # 반환할 디시콘 파일명
             break
     file.close()
 
-    return resultArr
+    if not os.path.exists(CACHE_PATH + cache_file_name):               # 캐시 이미지가 실제로 존재하지 않으면
+        cache_file_name
+
+    return cache_file_name
 
 # 캐시 개수 조회
 def get_cache_count():
     file_path = CACHE_PATH + 'cacheIdx.txt'
 
-    if not os.path.exists(file_path):                  # 즐겨찾기 목록이 존재하지 않으면 0 반환
+    if not os.path.exists(file_path):                  # 캐시 인덱스 파일이 존재하지 않으면 0 반환
         return 0
 
     file = open(file_path, mode='rt', encoding='utf-8')
@@ -672,7 +734,7 @@ def remove_lastest_cache():
     # 헤드(가장 오래된 캐시) 탐색
     lastest_cache = file.readline()
     splited = lastest_cache.split('\t')
-    lastest_cache_path = CACHE_PATH + splited[2]
+    lastest_cache_path = CACHE_PATH + splited[2].rstrip('\n')
     
     # 나머지줄 로드
     lines = file.readlines()
