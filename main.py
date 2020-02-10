@@ -401,24 +401,27 @@ async def add_favorite(ctx, *args):
         await ctx.channel.send(f'"{shortcut_name}" 단축어으로 추가된 즐겨찾기가 이미 존재합니다.')
         return 
 
-    file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
+    author_id = str(ctx.author.id)
+    file_path = FAVORITE_PATH + author_id +'.txt'
     file = open(file_path, mode='at', encoding='utf-8')
     file.write(shortcut_name + '\t' + package_name + '\t' + dccon_name + '\n')
     file.close()
 
     log(from_text(ctx), f'add_favorite {shortcut_name} is saved to {file_path}.')
-    await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기가 추가되었습니다. ({registed_count + 1}/{FAVORITE_MAX})')
+    await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기가 추가되었습니다. ({registed_count + 1}/{FAVORITE_MAX})')
     return
 
 
 # 즐겨찾기 목록 조회
 async def show_favorites(ctx):
     log(from_text(ctx), 'show_favorites command')
+
+    author_id = str(ctx.author.id)
     
-    file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
+    file_path = FAVORITE_PATH + author_id +'.txt'
 
     if not os.path.exists(file_path):
-        await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
+        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
     show_favorites = '\n'
@@ -432,7 +435,7 @@ async def show_favorites(ctx):
     file.close()
 
     # 즐겨찾기 목록 표시 + 사용자 표시
-    sender_tag = '<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록이에요. ({cnt}/{FAVORITE_MAX})\n'
+    sender_tag = '<@' + author_id + f'>님의 즐겨찾기 목록이에요. ({cnt}/{FAVORITE_MAX})\n'
     header = '#\t단축어\t패키지명\t디시콘명'
 
     msg = sender_tag + header + show_favorites
@@ -470,10 +473,11 @@ async def delete_favorite(ctx, *args):
         await ctx.channel.send('인자수가 올바르지 않습니다. (!즐찾 삭제 "단축어")')
         return
 
-    file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
+    author_id = str(ctx.author.id)
+    file_path = FAVORITE_PATH + author_id +'.txt'
 
     if not os.path.exists(file_path):
-        await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
+        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
     shortcut_name = args[1]
@@ -499,10 +503,10 @@ async def delete_favorite(ctx, *args):
         file.close()
 
         log(from_text(ctx), f'delete_favorite {shortcut_name} is delete from {file_path}.')
-        await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어가 삭제되었습니다.')
+        await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어가 삭제되었습니다.')
     else:
         log(from_text(ctx), f'delete_favorite "{shortcut_name}" cannot found')
-        await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
+        await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
 
 # 즐겨찾기 사용
 @bot.command(name='ㅋ')
@@ -515,16 +519,17 @@ async def send_favorite(ctx, *args):
         return
 
     shortcut_name = args[0]
+    author_id = str(ctx.author.id)
 
-    file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
+    file_path = FAVORITE_PATH + author_id +'.txt'
     if not os.path.exists(file_path):
-        await ctx.channel.send('<@' + str(ctx.author.id) + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
+        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
     res = find_favorite(ctx, shortcut_name)
     if res[0] == '':
         log(from_text(ctx), f'send_favorite "{shortcut_name}" cannot found')
-        await ctx.channel.send('<@' + str(ctx.author.id) + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
+        await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
         return
 
     await send_dccon(ctx, *res)
@@ -772,7 +777,14 @@ def create_directory(path):
         
         return False
 
-
+# DM
+async def send_direct_message(user_id, contents):
+    user = await bot.fetch_user(user_id)
+    dm_channel = user.dm_channel
+    if dm_channel is None:
+        await user.create_dm()
+        dm_channel = user.dm_channel
+    await dm_channel.send(content=contents)
 
 @bot.event
 async def on_command_error(ctx, error):
