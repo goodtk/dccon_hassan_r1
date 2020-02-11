@@ -219,6 +219,10 @@ def dccon_find_exactly_same(package_search_list, package_name):
 # 로컬 캐시에 디시콘 있으면 버퍼와 파일명 반환
 async def dccon_use_cache(package_name, idx):
     resultArr = ['', '']
+
+    if CACHE_MAX == 0:                                                                                              # 캐시 사용하지 않는 경우
+        return resultArr
+
     cache_file_name = get_cache_file_name(package_name, idx)
 
     if not cache_file_name == '':
@@ -300,10 +304,11 @@ async def dccon_download(dccon, session, package_name, idx):
         dccon_img_request = session.get(dccon_img, headers={'Referer': DCCON_HOME_URL})
 
         buffer = BytesIO(dccon_img_request.content)
-        cache = BytesIO(dccon_img_request.content)
         file_name = package_name + '_' + dccon['title'] + '.' + dccon['ext']
 
-        await acc_cache(package_name, idx, file_name, cache)                     # 캐시에 추가
+        if not (CACHE_MAX == 0):
+            cache = BytesIO(dccon_img_request.content)
+            await acc_cache(package_name, idx, file_name, cache)                     # 캐시에 추가
     except:
         return resultArr
     else:
