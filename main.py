@@ -41,10 +41,10 @@ EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
 OWNER_ID = os.getenv('OWNER_ID')
 
-FAVORITE_PATH = './favorites/'
+FAVORITE_PATH = os.path.dirname(os.path.abspath(__file__)) + '/favorites/'
 FAVORITE_MAX = int(os.getenv('FAVORITE_MAX'))
 
-CACHE_PATH = '/.cache/'
+CACHE_PATH = os.path.dirname(os.path.abspath(__file__)) + '/.cache/'
 CACHE_MAX = int(os.getenv('CACHE_MAX'))
 
 
@@ -65,7 +65,9 @@ async def on_ready():
     log('SYSTEM', 'Bot ready')
     log('SYSTEM', f'BOT_TOKEN : {BOT_TOKEN}')
     log('SYSTEM', f'OWNER_ID : {OWNER_ID}')
+    log('SYSTEM', f'FAVORITE_PATH : {FAVORITE_PATH}')
     log('SYSTEM', f'FAVORITE_MAX : {FAVORITE_MAX}')
+    log('SYSTEM', f'CACHE_PATH : {CACHE_PATH}')
     log('SYSTEM', f'CACHE_MAX : {CACHE_MAX}')
 
 
