@@ -518,12 +518,17 @@ async def delete_favorite(ctx, *args):
 async def send_favorite(ctx, *args):
     log(from_text(ctx), 'send_favorite command')
 
-    if not len(args) == 1:
+    shortcut_name = ''
+
+    if len(args) <= 0:
         log(from_text(ctx), 'send_favorite wrong arg count')
         await ctx.channel.send('인자수가 올바르지 않습니다. (!ㅋ "단축어")')
         return
 
-    shortcut_name = args[0]
+    for arg in args:
+        shortcut_name += arg + ' '
+
+    shortcut_name = shortcut_name.strip()
     author_id = str(ctx.author.id)
 
     file_path = FAVORITE_PATH + author_id +'.txt'
