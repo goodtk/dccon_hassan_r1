@@ -475,7 +475,7 @@ async def show_favorites(ctx):
 async def delete_favorite(ctx, *args):
     log(from_text(ctx), 'delete_favorite command')
 
-    if not len(args) == 2:
+    if len(args) < 2:
         log(from_text(ctx), 'delete_favorite wrong arg count')
         await ctx.channel.send('인자수가 올바르지 않습니다. (!즐찾 삭제 "단축어")')
         return
@@ -487,7 +487,13 @@ async def delete_favorite(ctx, *args):
         await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
-    shortcut_name = args[1]
+    shortcut_name = ''
+
+    for i, arg in enumerate(args):
+        if i > 0:
+            shortcut_name += arg + ' '
+
+    shortcut_name = shortcut_name.strip()
 
     file = open(file_path, mode='rt', encoding='utf-8')
     lines = file.readlines()
