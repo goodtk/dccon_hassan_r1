@@ -400,7 +400,9 @@ async def add_favorite(ctx, *args):
     package_name = args[2]
     dccon_name = args[3]
 
-    registed_count = get_favorite_count(ctx.author.id)
+    file_path = FAVORITE_PATH + str(ctx.author.id) +'.txt'
+
+    registed_count = get_file_line_cnt(file_path)
 
     if registed_count >= FAVORITE_MAX:                                          # 즐겨찾기 추가횟수 체크
         log(from_text(ctx), 'delete_favorite cannot register favorite (max)')
@@ -412,7 +414,6 @@ async def add_favorite(ctx, *args):
         return 
 
     author_id = str(ctx.author.id)
-    file_path = FAVORITE_PATH + author_id +'.txt'
     file = open(file_path, mode='at', encoding='utf-8')
     file.write(shortcut_name + '\t' + package_name + '\t' + dccon_name + '\n')
     file.close()
@@ -604,10 +605,8 @@ async def send_favorite(ctx, *args):
     await send_dccon(ctx, *res)
 
 
-# 추가된 즐겨찾기 개수 조회
-def get_favorite_count(user_id):
-    file_path = FAVORITE_PATH + str(user_id) +'.txt'
-
+# 파일 줄 개수 조회
+def get_file_line_cnt(file_path):
     if not os.path.exists(file_path):                  # 즐겨찾기 목록이 존재하지 않으면 0 반환
         return 0
 
@@ -678,13 +677,14 @@ async def send_favorites(ctx, user_id):
     fileName = user_id + '.txt'
     file_path = FAVORITE_PATH + fileName
 
-    if (not os.path.exists(file_path)) or (get_favorite_count(user_id) == 0):
+    if (not os.path.exists(file_path)) or (get_file_line_cnt(file_path) == 0):
         await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
     await ctx.author.send(file=File(file_path, fileName), content=ctx.author.name + '님의 즐겨찾기 목록을 업로드했습니다.')
 
 
+# 즐겨찾기 복원
 async def restore_favorites(ctx, *args):
     if not len(args) == 2:
         log(from_text(ctx), 'restore_favorites wrong arg count')
@@ -693,9 +693,20 @@ async def restore_favorites(ctx, *args):
 
     url = args[1]
     user_id = str(ctx.author.id)
-    save_file_path = FAVORITE_PATH + user_id + '.txt'
+    save_file_path = FAVORITE_PATH + user_id + '.txt.tmp'
 
-    download_file(url, save_file_path)
+    download_file(url, save_file_path)                                                 # ID.txt.tmp 로 파일 임시로 저장
+
+    new_favorites_line_length = get_file_line_cnt(save_file_path)
+
+    if (new_favorites_line_length <= 0) or (new_favorites_line_length > FAVORITE_MAX): # 유저가 보낸 즐겨찾기 파일의 줄 수가 0보다 작거나 MAX보다 크면 교체하지 않음.
+        log(from_text(ctx), 'restore_favorites ' + user_id + '\'s favorites restore blocked')
+        await ctx.channel.send('<@' + user_id + '>님이 업로드한 즐겨찾기 파일이 빈 파일이거나 최대치를 넘깁니다. 복원할 수 없습니다.')
+        os.remove(save_file_path)
+        return
+
+    a=save_file_path[:-4]
+    shutil.move(save_file_path, save_file_path[:-4])                                   # 즐겨찾기 교체
     log(from_text(ctx), 'restore_favorites restored ' + user_id + '\'s favorites')
     await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록을 복원했습니다.')
 
