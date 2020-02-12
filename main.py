@@ -123,6 +123,8 @@ async def send_dccon(ctx, *args):
 
     log(from_text(ctx), f'interpreted: {package_name}, {idx}. list_print_mode: {list_print_mode}')
 
+    await ctx.channel.trigger_typing()
+
     ############################################################################################################
     # respect https://github.com/gw1021/dccon-downloader/blob/master/python/app.py#L7:L18
 
