@@ -40,6 +40,7 @@ DCCON_DETAILS_URL = 'https://dccon.dcinside.com/index/package_detail'
 EMBED_COLOR = 0x4559e9
 INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
 OWNER_ID = os.getenv('OWNER_ID')
+MSG_MAX_LENGTH = 2000
 
 FAVORITE_PATH = os.path.dirname(os.path.abspath(__file__)) + '/favorites/'
 FAVORITE_MAX = int(os.getenv('FAVORITE_MAX'))
@@ -338,18 +339,17 @@ async def favorite_manage(ctx, *args):
     if not args:
         log(from_text(ctx), 'favorite_help command')
         embed = Embed(title='안녕하세요! 디시콘 핫산이에요!',
-                  description=f'즐겨찾기는 개인당 {FAVORITE_MAX}개 까지만 추가 가능해요.\n띄워쓰기를 포함하려면 "로 묶어주세요.\n사용가능한 명령어로 추가, 목록, 삭제, 사용이 있어요.',
+                  description=f'즐겨찾기는 개인당 {FAVORITE_MAX}개 까지만 추가 가능해요.\n띄워쓰기를 포함하려면 "로 묶어주세요.\n단, 인자가 하나인 경우 "로 안묶어도 됩니다.(삭제, 검색, 사용)',
                   color=EMBED_COLOR)
         embed.add_field(name='즐겨찾기 추가', value='!즐찾 추가 "단축어" "디시콘 패키지 제목" "콘 이름"', inline=False)
         embed.add_field(name='사용 예시', value='!즐찾 멘15 멘헤라콘 15, !즐찾 마히리메꿀잠 "마히로콘 리메이크" 꿀잠 , !즐찾 좋은말콘응원 "좋은말콘 스페셜 에디션" 응원, ...', inline=False)
         embed.add_field(name='즐겨찾기 목록 확인', value='!즐찾 목록', inline=False)
         embed.add_field(name='즐겨찾기 삭제', value='!즐찾 삭제 "단축어"', inline=False)
-        embed.add_field(name='사용 예시', value='!즐찾 삭제 멘15, !즐찾 삭제 마히리메꿀잠, !즐찾 삭제 좋은말콘응원, ...', inline=False)
+        embed.add_field(name='즐겨찾기 검색', value='!즐찾 검색 "단축어"', inline=False)
         embed.add_field(name='즐겨찾기 사용', value='!ㅋ "단축어"', inline=False)
-        embed.add_field(name='사용 예시', value='!ㅋ 멘15, !ㅋ 마히리메꿀잠, !ㅋ 좋은말콘응원, ...', inline=False)
-        embed.add_field(name='즐겨찾기 백업', value='!즐찾 백업 [옵션-사용자ID]', inline=False)
+        embed.add_field(name='즐겨찾기 백업', value='!즐찾 백업 [사용자ID] (ID는 옵션)', inline=False)
         embed.add_field(name='사용 예시', value='!즐찾 백업, !즐찾 백업 123456789, ...', inline=False)
-        embed.add_field(name='즐겨찾기 복원', value='!즐찾 복원 파일URL', inline=False)
+        embed.add_field(name='즐겨찾기 복원', value='!즐찾 복원 "파일URL"', inline=False)
         embed.add_field(name='즐겨찾기 리셋', value='!즐찾 리셋', inline=False)
         embed.set_footer(text='몬헌좆망겜')
         await ctx.channel.send(embed=embed)
@@ -367,6 +367,9 @@ async def favorite_manage(ctx, *args):
 
     elif args[0] == '삭제':
         await delete_favorite(ctx, *args)
+
+    elif args[0] == '검색':
+        await search_favorite(ctx, *args)
 
     elif args[0] == '사용':
         await ctx.channel.send('즐겨찾기 사용은 !ㅋ "단축어" 으로 사용해주세요.')
@@ -431,25 +434,26 @@ async def show_favorites(ctx):
         await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
-    show_favorites = '\n'
+    favorites = ''
     cnt = 0
 
     file = open(file_path, mode='rt', encoding='utf-8')
     lines = file.readlines()
     for line in lines:
+        splited = line.split('\t')
         cnt += 1
-        show_favorites += str(cnt) + '\t' + line
+        favorites += str(cnt) + '\t"' + splited[0] + '" "' + splited[1] + '" "' + splited[2].rstrip() + '"\n'
     file.close()
 
     # 즐겨찾기 목록 표시 + 사용자 표시
-    sender_tag = '<@' + author_id + f'>님의 즐겨찾기 목록이에요. ({cnt}/{FAVORITE_MAX})\n'
-    header = '#\t단축어\t패키지명\t디시콘명'
+    sender_tag = ctx.author.name + f'님의 즐겨찾기 목록이에요. ({cnt}/{FAVORITE_MAX})\n'
+    header = '#\t단축어\t패키지명\t디시콘명\n'
 
-    msg = sender_tag + header + show_favorites
+    msg = sender_tag + header + favorites
 
     # 즐겨찾기 목록이 2000길이 이상일 때도 보낼 수 있게 하였음
     start = 0
-    end = 1999
+    end = MSG_MAX_LENGTH - 1
 
     while True:
         splited_msg = msg[start:end]
@@ -461,14 +465,13 @@ async def show_favorites(ctx):
         if left_len <= 0:
             break
 
-        if left_len < 2000:
+        if left_len < MSG_MAX_LENGTH:
             await ctx.author.send(msg[end:])
             break
 
         else:
             start = end + 1
-            end += 2000
-
+            end += MSG_MAX_LENGTH
 
 
 # 즐겨찾기 삭제
@@ -497,6 +500,7 @@ async def delete_favorite(ctx, *args):
 
     file = open(file_path, mode='rt', encoding='utf-8')
     lines = file.readlines()
+    file.close()
 
     new_lines = ''
     isExist = False;
@@ -508,8 +512,6 @@ async def delete_favorite(ctx, *args):
         else:
             new_lines += line
 
-    file.close()
-
     if isExist:
         file = open(file_path, mode='wt', encoding='utf-8')
         file.writelines(new_lines)
@@ -520,6 +522,55 @@ async def delete_favorite(ctx, *args):
     else:
         log(from_text(ctx), f'delete_favorite "{shortcut_name}" cannot found')
         await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
+
+
+# 즐겨찾기 검색
+async def search_favorite(ctx, *args):
+    log(from_text(ctx), 'search_favorite command')
+
+    if len(args) < 2:
+        log(from_text(ctx), 'search_favorite wrong arg count')
+        await ctx.channel.send('인자수가 올바르지 않습니다. (!즐찾 검색 "단축어")')
+        return
+
+    author_id = str(ctx.author.id)
+    file_path = FAVORITE_PATH + author_id +'.txt'
+
+    if not os.path.exists(file_path):
+        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
+        return
+
+    search_word = ''
+
+    for i, arg in enumerate(args):
+        if i > 0:
+            search_word += arg + ' '
+
+    search_word = search_word.strip()
+
+    file = open(file_path, mode='rt', encoding='utf-8')
+    lines = file.readlines()
+    file.close()
+
+    search_results = ''
+    isExist = False;
+
+    cnt = 0
+
+    for line in lines:
+        splited = line.split('\t')
+        if search_word in splited[0]:
+            cnt += 1
+            search_results += str(cnt) + '\t"' + splited[0] + '" "' + splited[1] + '" "' + splited[2].rstrip() + '"\n'
+
+    if not search_results == '':
+        log(from_text(ctx), f'search_favorite {search_word} searched successfully')
+
+        await ctx.author.send(ctx.author.name + f'님의 단축어 "{search_word}" 검색 결과 ({cnt}/{len(lines)}) \n'+ search_results)
+    else:
+        log(from_text(ctx), f'search_favorite {search_word} not found')
+        await ctx.author.send(ctx.author.name + f'님의 단축어 "{search_word}" 검색 결과가 없습니다.')
+
 
 # 즐겨찾기 사용
 @bot.command(name='ㅋ')
@@ -631,7 +682,7 @@ async def send_favorites(ctx, user_id):
         await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
         return
 
-    await ctx.author.send(file=File(file_path, fileName), content='<@' + user_id + '>님의 즐겨찾기 목록을 업로드했습니다.')
+    await ctx.author.send(file=File(file_path, fileName), content=ctx.author.name + '님의 즐겨찾기 목록을 업로드했습니다.')
 
 
 async def restore_favorites(ctx, *args):
