@@ -81,16 +81,10 @@ async def help(ctx):
     embed.add_field(name='사용 방법', value='!콘 "디시콘 패키지 제목" "콘 이름"', inline=False)
     embed.add_field(name='사용 예시 1', value='!콘 멘헤라콘 15, !콘 "마히로콘 리메이크" 꿀잠, !콘 "좋은말콘 스페셜 에디션" 응원, ...', inline=False)
     embed.add_field(name='사용 예시 2', value='!콘 "나나히라 라인", !콘 카구야는인사받고싶어, ... (디시콘 패키지 이름만 입력 시 디시콘 목록 출력)', inline=False)
-    embed.add_field(name='명령어', value='!콘, !도움, !대하여, !초대링크, !ㅋ, !즐찾', inline=False)
+    embed.add_field(name='명령어', value='!콘, !도움, !대하여, !ㅋ, !즐찾', inline=False)
 
     embed.set_footer(text='그코좆망겜')
     await ctx.channel.send(embed=embed)
-
-
-@bot.command(name='초대링크')
-async def invite_link(ctx):
-    log(from_text(ctx), 'invite_link command')
-    await ctx.channel.send(f'봇 초대 링크 : {INVITE_URL}')
 
 
 @bot.command(name='대하여')
@@ -99,7 +93,7 @@ async def about(ctx):
     embed = Embed(title='디시콘 핫산',
                   description='디시콘을 디스코드에서 쓸 수 있게 해주는 디스코드 봇입니다.',
                   color=EMBED_COLOR)
-    embed.add_field(name='Repository', value='https://github.com/Dogdriip/dccon_hassan', inline=False)
+    embed.add_field(name='Repository', value='https://github.com/dldhk97/KITZzamBot', inline=False)
     await ctx.channel.send(embed=embed)
 
 
