@@ -185,19 +185,26 @@ async def send_dccon(ctx, *args):
                 cached = True
                 buffer = resultArr[0]
                 file_name = resultArr[1]
-            else:
+            else:                                                                                                                       # 캐시된 이미지가 없을 때
                 resultArr = ['', '']
-                for dccon in package_detail_json['detail']:
+                isExist = False;
+                for dccon in package_detail_json['detail']:                                                                             # 파싱한 결과에서 탐색
                     if dccon['title'] == idx:
                         resultArr = await dccon_download(dccon, session, package_name, idx)
+                        isExist= True;
                         break
 
-                if not resultArr[0] == '':                                                                                              # 디시콘 받아오는데 성공
-                    buffer = resultArr[0]
-                    file_name = resultArr[1]
+                if isExist:
+                    if not resultArr[0] == '':                                                                                              # 디시콘 받아오는데 성공
+                        buffer = resultArr[0]
+                        file_name = resultArr[1]
+                    else:
+                        log(from_text(ctx), 'dccon download failed')
+                        await ctx.channel.send(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 다운받는데 실패하였습니다.')
+                        return
                 else:
-                    log(from_text(ctx), 'dccon download failed')
-                    await ctx.channel.send(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 다운받는데 실패하였습니다.')
+                    log(from_text(ctx), 'no dccon in package')
+                    await ctx.channel.send(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 찾을 수 없습니다.')
                     return
 
             succeed = await dccon_send_with_tag(ctx, buffer, file_name)
