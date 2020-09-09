@@ -71,6 +71,8 @@ async def on_ready():
     log('SYSTEM', f'FAVORITE_MAX : {FAVORITE_MAX}')
     log('SYSTEM', f'CACHE_PATH : {CACHE_PATH}')
     log('SYSTEM', f'CACHE_MAX : {CACHE_MAX}')
+    log('SYSTEM', f'CONCOMD_AUTODEL_CHANNEL_PATH : {CONCMD_AUTODEL_CHANEL_PATH}')
+
 
 
 @bot.command(name='도움')
