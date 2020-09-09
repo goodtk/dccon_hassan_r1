@@ -210,8 +210,10 @@ async def send_dccon(ctx, *args):
                 lines = file.readlines()
                 file.close()
 
-                if str(ctx.channel.id) in lines:
-                    await ctx.message.delete()      # 명령어 메시지 삭제
+                for line in lines:
+                    if str(ctx.channel.id) == line.replace('\n',''): 
+                        await ctx.message.delete()      # 명령어 메시지 삭제
+                        break
 
             if succeed:
                 log(from_text(ctx), 'succeed(cached)' if cached else 'succeed')
