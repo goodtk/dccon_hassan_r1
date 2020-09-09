@@ -215,8 +215,11 @@ async def send_dccon(ctx, *args):
                 for line in lines:
                     print(str(ctx.channel.id) + ' vs ' + line.replace('\n',''))
                     if str(ctx.channel.id) == line.replace('\n',''): 
-                        await ctx.message.delete()      # 명령어 메시지 삭제
-                        print('콘 명령어 자동 삭제 완료')
+                        try:
+                            await ctx.message.delete()      # 명령어 메시지 삭제
+                            print('콘 명령어 자동 삭제 완료')
+                        except Exception as autodelException:
+                            print(autodelException)
                         break
 
             if succeed:
