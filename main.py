@@ -48,6 +48,7 @@ FAVORITE_MAX = int(os.getenv('FAVORITE_MAX'))
 CACHE_PATH = os.path.dirname(os.path.abspath(__file__)) + '/.cache/'
 CACHE_MAX = int(os.getenv('CACHE_MAX'))
 
+CONCMD_AUTODEL_CHANEL_PATH = os.path.dirname(os.path.abspath(__file__)) + '/.concmdAutodelChannel'
 
 bot = commands.Bot(command_prefix='!')
 
@@ -202,6 +203,15 @@ async def send_dccon(ctx, *args):
                     return
 
             succeed = await dccon_send_with_tag(ctx, buffer, file_name)
+
+            # 콘 명령어 자동 삭제 채널에 포함이 된다면 명령어 삭제
+            if os.path.exists(CONCMD_AUTODEL_CHANEL_PATH): 
+                file = open(CONCMD_AUTODEL_CHANEL_PATH, mode='rt', encoding='utf-8')
+                lines = file.readlines()
+                file.close()
+
+                if str(ctx.channel.id) in lines:
+                    await ctx.message.delete()      # 명령어 메시지 삭제
 
             if succeed:
                 log(from_text(ctx), 'succeed(cached)' if cached else 'succeed')
