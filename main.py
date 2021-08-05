@@ -96,7 +96,7 @@ async def about(ctx):
     embed = Embed(title='디시콘 핫산',
                   description='디시콘을 디스코드에서 쓸 수 있게 해주는 디스코드 봇입니다.',
                   color=EMBED_COLOR)
-    embed.add_field(name='Repository', value='https://github.com/dldhk97/KITZzamBot', inline=False)
+    embed.add_field(name='Repository', value='https://github.com/dldhk97/dccon_hassan', inline=False)
     await ctx.channel.send(embed=embed)
 
 
