@@ -12,6 +12,7 @@ from error.dccon_error import DcconDownloadError, DcconPackageNotFoundError
 # 디시콘 목록 출력
 async def send_dccon_list(ctx, package_name):
     await ctx.channel.trigger_typing()
+    await ctx.defer()
     
     try:
         package_data = _parse_package_data(ctx, package_name)
@@ -26,13 +27,13 @@ async def send_dccon_list(ctx, package_name):
 
     log(ctx, f'send_dccon_list, interpreted: {package_name}.')
     
-    messages = _list_print(package_detail_json, package_name, package_search_req, target_package_num)
-    for msg in messages:
-        await sender.send(ctx, msg)
+    message = _list_print(package_detail_json, package_name, package_search_req, target_package_num)
+    await sender.send(ctx, message)
 
 # 디시콘 출력
 async def send_dccon(ctx, package_name, idx):
     await ctx.channel.trigger_typing()
+    await ctx.defer()
 
     try:
         package_data = _parse_package_data(ctx, package_name)
@@ -90,8 +91,8 @@ def _list_print(package_detail_json, package_name, package_search_req, target_pa
     for dccon in package_detail_json['detail']:
         available_dccon_list.append(dccon['title'])
 
-    result = [f'"{package_name}"에서 사용 가능한 디시콘 : ' + ', '.join(available_dccon_list).rstrip(', ')]
-    result.append('디시콘샵 URL : ' + package_search_req.request.url + '#' + target_package_num)
+    result = f'"{package_name}"에서 사용 가능한 디시콘 : ' + ', '.join(available_dccon_list).rstrip(', ')
+    result += '\n' + '디시콘샵 URL : ' + package_search_req.request.url + '#' + target_package_num
     return result
 
 # 디시콘 파일명, 버퍼를 다운 혹은 캐시를 통해 반환

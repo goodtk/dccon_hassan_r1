@@ -2,3 +2,4 @@ requests
 beautifulsoup4
 discord.py==1.7.3
 python-dotenv
+discord-py-interactions==3.0.2

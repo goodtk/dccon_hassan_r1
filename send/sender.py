@@ -4,11 +4,11 @@ from discord import File
 async def send_with_dccon(ctx, buffer, file_name):
     sender_tag = "<@" + str(ctx.author.id) + ">"                             # 디시콘 + 콘 사용자 표시
     try:
-        await ctx.channel.send(file=File(buffer, file_name), content=sender_tag)
+        await ctx.send(file=File(buffer, file_name), content=sender_tag)
         return True
     except:
-        await ctx.channel.send('dccon_send : 디시콘 업로드 중 오류 발생.')
+        await ctx.send('dccon_send : 디시콘 업로드 중 오류 발생.')
         return False
 
 async def send(ctx, msg):
-    await ctx.channel.send(msg)
+    await ctx.send(msg)
