@@ -36,7 +36,6 @@ async def on_ready():
 @slash.slash(
     name="help",
     description="도움말을 볼 수 있습니다.",
-    guild_ids=[560808861339222026],
     options=[]
 )
 async def slash_help(ctx):
@@ -49,7 +48,6 @@ async def manual_help(ctx):
 @slash.slash(
     name="about",
     description="디시콘 핫산에 대해 알아볼 수 있습니다.",
-    guild_ids=[560808861339222026]
 )
 async def slash_about(ctx):
     await help.send_about(ctx)
@@ -63,7 +61,6 @@ async def manual_about(ctx):
 @slash.slash(
     name="dccon",
     description="디시콘을 사용할 수 있습니다.",
-    guild_ids=[560808861339222026],
     options=[
         create_option(
             name="package",
@@ -101,7 +98,6 @@ async def manual_send_dccon(ctx, *args):
 @slash.slash(
     name="dccon_list",
     description="디시콘 목록을 조회할 수 있습니다.",
-    guild_ids=[560808861339222026],
     options=[
         create_option(
             name="package",
@@ -123,7 +119,6 @@ async def slash_send_dccon_list(ctx, package_name):
 @slash.slash(
     name="favor",
     description="단축어로 저장해둔 디시콘을 보낼 수 있습니다.",
-    guild_ids=[560808861339222026],
     options=[
         create_option(
             name="단축어",
@@ -199,7 +194,6 @@ async def add_favorite(ctx, *args):
 @slash.slash(
     name="favorite_list",
     description="단축어 목록을 조회합니다.",
-    guild_ids=[560808861339222026]
 )
 async def slash_show_favorites(ctx):
     await show_favorites(ctx)
