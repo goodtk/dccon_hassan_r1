@@ -6,7 +6,7 @@ from requests import get
 import shutil
 
 # 요청한 사용자에게 대상 사용자의 즐겨찾기 목록을 전송
-def dump_favorites(ctx, user_id):
+def get_favorites_file(ctx, user_id):
     file_name = user_id + '.txt'
     file_path = os.path.join(hassan_env.FAVORITE_PATH, file_name)
 

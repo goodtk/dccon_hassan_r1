@@ -15,8 +15,8 @@ def delete_favorite(ctx, shortcut_name):
 def serach_favorites(ctx, keyword):
     return favorite_search_service.search_favorite(ctx, keyword)
 
-def dump_favorites(ctx, user_id):
-    return favorite_backup_service.dump_favorites(ctx, user_id)
+def get_favorites_file(ctx, user_id):
+    return favorite_backup_service.get_favorites_file(ctx, user_id)
 
 def resotre_favorites(ctx, download_url):
     return favorite_backup_service.restore_favorites(ctx, download_url)
