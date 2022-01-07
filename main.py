@@ -281,6 +281,7 @@ async def send_favorites(ctx, user_id):
         file_name = results[2]
 
         await ctx.author.send(file=File(file_path, file_name), content=msg)
+        await ctx.send('DM으로 즐겨찾기 목록을 전송했습니다.')
     except FavoriteError as e:
         await ctx.send(str(e))
 
