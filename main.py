@@ -219,7 +219,7 @@ async def dccon_use_cache(package_name, idx):
     cache_file_name = read_cache(package_name, idx)
 
     if not cache_file_name == '':
-        cache_file_path = hassan_env.CACHE_PATH + cache_file_name
+        cache_file_path = os.path.join(hassan_env.CACHE_PATH, cache_file_name)
         buffer=''
 
         if not os.path.exists(cache_file_path):                                                                     # 캐시 파일이 존재하지 않는 경우
