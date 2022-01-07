@@ -91,6 +91,7 @@ async def manual_send_dccon(ctx, *args):
         await ctx.channel.send('사용법을 참고해주세요. (!도움)' + '\n디시콘 패키지명이나 디시콘명에 공백이 있을 경우 큰따옴표로 묶어야 합니다.')
         return
 
+    await ctx.channel.trigger_typing()
     if len(args) < 2:
         await core.send_dccon_list(ctx, args[0])
     else:

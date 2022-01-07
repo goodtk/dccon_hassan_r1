@@ -11,8 +11,6 @@ from error.dccon_error import DcconDownloadError, DcconPackageNotFoundError
 
 # 디시콘 목록 출력
 async def send_dccon_list(ctx, package_name):
-    await ctx.channel.trigger_typing()
-    
     try:
         package_data = _parse_package_data(ctx, package_name)
     except DcconPackageNotFoundError as e:
@@ -31,8 +29,6 @@ async def send_dccon_list(ctx, package_name):
 
 # 디시콘 출력
 async def send_dccon(ctx, package_name, idx):
-    await ctx.channel.trigger_typing()
-
     try:
         package_data = _parse_package_data(ctx, package_name)
     except DcconPackageNotFoundError as e:
