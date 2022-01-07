@@ -68,7 +68,14 @@ async def send_dccon(ctx, *args):
         await ctx.channel.send('디시콘 패키지명이나 디시콘명에 공백이 있을 경우 큰따옴표로 묶어야 합니다.')
         return
 
-    await core.send_dccon(ctx, args)
+    package_name = args[0]
+
+    if len(args) < 2:
+        await core.send_dccon_list(ctx, package_name)
+    else:
+        idx = args[1]
+        await core.send_dccon(ctx, package_name, idx)
+        
 
 ############################################################ 모듈화 ############################################################
 
