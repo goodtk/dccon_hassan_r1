@@ -81,6 +81,7 @@ async def manual_about(ctx):
         }
 )
 async def slash_send_dccon(ctx, package_name, idx):
+    await ctx.defer()
     await core.send_dccon(ctx, package_name, idx)
 
 @bot.command(name='콘')
@@ -111,6 +112,7 @@ async def manual_send_dccon(ctx, *args):
         }
 )
 async def slash_send_dccon_list(ctx, package_name):
+    await ctx.defer()
     await core.send_dccon_list(ctx, package_name)
         
 
@@ -132,6 +134,7 @@ async def slash_send_dccon_list(ctx, package_name):
         }
 )
 async def slash_send_favorite(ctx, keyword):
+    await ctx.defer()
     await manual_send_favorite(ctx, keyword)
 
 # 즐겨찾기
@@ -196,11 +199,11 @@ async def add_favorite(ctx, *args):
     description="단축어 목록을 조회합니다.",
 )
 async def slash_show_favorites(ctx):
+    await ctx.defer()
     await show_favorites(ctx)
 
 # 즐겨찾기 목록 조회
 async def show_favorites(ctx):
-    await ctx.defer()
     result = favorite_controller.show_favorites(ctx)
     for msg in result:
         await ctx.author.send(msg)
