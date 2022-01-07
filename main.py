@@ -10,6 +10,7 @@ import env.hassan_env as hassan_env
 from favorite import favorite_controller
 from util.string_util import combine_words
 from dccon import core
+from error.favorite_error import FavoriteError
 
 bot = commands.Bot(command_prefix='!')
 
@@ -201,15 +202,11 @@ async def send_favorite(ctx, *args):
 
     shortcut_name = combine_words(args)
 
-    result_pair = favorite_controller.find_favorite_one(ctx, shortcut_name)
-    
-    is_success = result_pair[0]
-    result = result_pair[1]
-    
-    if is_success:
-        await send_dccon(ctx, *result)
-    else:
-        await ctx.channel.send(result)
+    try:
+        result_pair = favorite_controller.find_favorite_one(ctx, shortcut_name)
+        await send_dccon(ctx, *result_pair)
+    except FavoriteError as e:
+        await ctx.channel.send(str(e))
     
 
 # 즐겨찾기 백업
@@ -231,17 +228,15 @@ async def favorite_backup(ctx, *args):
 # 요청한 사용자에게 대상 사용자의 즐겨찾기 목록을 전송
 @bot.command(pass_context=True)
 async def send_favorites(ctx, user_id):
-    results = favorite_controller.get_favorites_file(ctx, user_id)
-    
-    is_succeed = results[0]
-    msg = results[1]
-    file_path = results[2]
-    file_name = results[3]
-
-    if is_succeed:
+    try:
+        results = favorite_controller.get_favorites_file(ctx, user_id)
+        msg = results[0]
+        file_path = results[1]
+        file_name = results[2]
+        
         await ctx.author.send(file=File(file_path, file_name), content=msg)
-    else:
-        await ctx.channel.send(msg)
+    except FavoriteError as e:
+        await ctx.channel.send(str(e))
 
 
 # 즐겨찾기 복원

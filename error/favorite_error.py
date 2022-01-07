@@ -1,0 +1,2 @@
+class FavoriteError(Exception):
+    pass

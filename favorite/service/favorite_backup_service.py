@@ -4,6 +4,7 @@ from log.logger import log
 from util.file_util import get_file_line_cnt
 from requests import get
 import shutil
+from error.favorite_error import FavoriteError
 
 # 요청한 사용자에게 대상 사용자의 즐겨찾기 목록을 전송
 def get_favorites_file(ctx, user_id):
@@ -11,10 +12,10 @@ def get_favorites_file(ctx, user_id):
     file_path = os.path.join(hassan_env.FAVORITE_PATH, file_name)
 
     if (not os.path.exists(file_path)) or (get_file_line_cnt(file_path) == 0):
-        return [False, '<@' + user_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.', 0, 0]
+        raise FavoriteError('<@' + user_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
 
-    msg = ctx.author.name + '님의 즐겨찾기 목록을 업로드했습니다.'
-    return [True, msg, file_path, file_name]
+    msg = '<@' + user_id + '>님의 즐겨찾기 목록을 업로드했습니다.'
+    return [msg, file_path, file_name]
 
 # 즐겨찾기 복원
 def restore_favorites(ctx, download_url):

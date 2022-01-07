@@ -2,6 +2,7 @@ import os
 import env.hassan_env as hassan_env
 from log.logger import log
 from util.file_util import get_file_line_cnt
+from error.favorite_error import FavoriteError
 
 # 즐겨찾기 사용
 def find_favorite_one(ctx, shortcut_name):
@@ -11,14 +12,14 @@ def find_favorite_one(ctx, shortcut_name):
 
     file_path = os.path.join(hassan_env.FAVORITE_PATH, author_id) + '.txt'
     if not os.path.exists(file_path):
-        return [False, '<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.']
+        raise FavoriteError('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
 
     dccon = _find_matches_from_file(ctx, shortcut_name)
     if dccon[0] == '':
         log(ctx, f'send_favorite "{shortcut_name}" cannot found')
-        return [False, '<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.']
+        raise FavoriteError('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
 
-    return [True, dccon]
+    return dccon
 
 
 # 즐겨찾기 단축어로 탐색
