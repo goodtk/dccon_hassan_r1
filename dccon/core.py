@@ -1,7 +1,7 @@
 import requests
 import urllib
 from bs4 import BeautifulSoup
-from log.logger import log
+from logger.logger import log
 import env.hassan_env as hassan_env
 from cache import cache_controller
 from .download import downloader

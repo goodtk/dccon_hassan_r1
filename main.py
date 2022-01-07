@@ -5,7 +5,7 @@ from discord.flags import Intents
 from discord_slash import SlashCommand
 from discord_slash.utils.manage_commands import create_option, create_choice
 
-from log.logger import log, system_log
+from logger.logger import log, system_log
 from util.directory_util import create_directory
 from env.env_loader import load_env
 import env.hassan_env as hassan_env

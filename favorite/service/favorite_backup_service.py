@@ -1,6 +1,6 @@
 import os
 import env.hassan_env as hassan_env
-from log.logger import log
+from logger.logger import log
 from util.file_util import get_file_line_cnt
 from requests import get
 import shutil

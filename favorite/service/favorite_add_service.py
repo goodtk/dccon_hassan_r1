@@ -1,6 +1,6 @@
 import os
 import env.hassan_env as hassan_env
-from log.logger import log, system_log
+from logger.logger import log, system_log
 from util.file_util import get_file_line_cnt
 
 # 즐겨찾기 추가

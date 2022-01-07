@@ -1,7 +1,7 @@
 import os
 import env.hassan_env as hassan_env
 from util.directory_util import create_directory
-from log.logger import system_log
+from logger.logger import system_log
 
 # 캐시 추가
 def add_cache(package_name, idx, file_name, bytes):

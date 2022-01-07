@@ -1,6 +1,6 @@
 import os
 import env.hassan_env as hassan_env
-from log.logger import system_log
+from logger.logger import system_log
 
 # 콘 명령어 자동 삭제 채널에 포함이 된다면 명령어 삭제
 async def auto_delete_dccon(ctx):

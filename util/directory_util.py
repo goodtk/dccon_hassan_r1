@@ -1,5 +1,5 @@
 import os
-from log.logger import system_log
+from logger.logger import system_log
 
 # 폴더 생성
 def create_directory(path):

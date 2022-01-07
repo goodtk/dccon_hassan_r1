@@ -1,6 +1,6 @@
 import env.hassan_env as hassan_env
 from discord import Embed
-from log.logger import log, system_log
+from logger.logger import log, system_log
 
 async def send_help(ctx):
     log(ctx, 'help command')

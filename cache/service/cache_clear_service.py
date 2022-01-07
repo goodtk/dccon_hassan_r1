@@ -2,7 +2,7 @@ import os
 import shutil
 import env.hassan_env as hassan_env
 
-from log.logger import system_log
+from logger.logger import system_log
 
 # 캐시 클리어
 def clear_cache(user_id, owner_id):

@@ -1,6 +1,6 @@
 import os
 import env.hassan_env as hassan_env
-from log.logger import log
+from logger.logger import log
 
 # 즐겨찾기 삭제
 def delete_favorite(ctx, shortcut_name):
