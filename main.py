@@ -2,20 +2,19 @@ import requests
 import os
 import urllib
 import io
-import shutil
 
 from io import BytesIO
 from bs4 import BeautifulSoup
 from discord import Game, Embed, File
 from discord.ext import commands
 
-from requests import get
-
 from log.logger import log, system_log
-from util.directory import create_directory
-from cache.cache_controller import add_cache, clear_cache, read_cache
+from util.directory_util import create_directory
+from cache import cache_controller
 from env.env_loader import load_env
 import env.hassan_env as hassan_env
+from favorite import favorite_controller
+from util.string_util import combine_words
 
 bot = commands.Bot(command_prefix='!')
 
@@ -216,7 +215,7 @@ async def dccon_use_cache(package_name, idx):
     if hassan_env.CACHE_MAX == 0:                                                                                              # 캐시 사용하지 않는 경우
         return resultArr
 
-    cache_file_name = read_cache(package_name, idx)
+    cache_file_name = cache_controller.read_cache(package_name, idx)
 
     if not cache_file_name == '':
         cache_file_path = os.path.join(hassan_env.CACHE_PATH, cache_file_name)
@@ -300,7 +299,7 @@ async def dccon_download(dccon, session, package_name, idx):
         file_name = package_name + '_' + dccon['title'] + '.' + dccon['ext']
 
         cache = BytesIO(dccon_img_request.content)
-        await add_cache(package_name, idx, file_name, cache)                     # 캐시에 추가
+        await cache_controller.add_cache(package_name, idx, file_name, cache)                     # 캐시에 추가
             
     except:
         return resultArr
@@ -340,7 +339,7 @@ async def favorite_manage(ctx, *args):
         embed.add_field(name='즐겨찾기 백업', value='!즐찾 백업 [사용자ID] (ID는 옵션)', inline=False)
         embed.add_field(name='사용 예시', value='!즐찾 백업, !즐찾 백업 123456789, ...', inline=False)
         embed.add_field(name='즐겨찾기 복원', value='!즐찾 복원 "파일URL"', inline=False)
-        embed.add_field(name='즐겨찾기 리셋', value='!즐찾 리셋', inline=False)
+        embed.add_field(name='즐겨찾기 초기화', value='!즐찾 초기화', inline=False)
         embed.set_footer(text='몬헌좆망겜')
         await ctx.channel.send(embed=embed)
         return
@@ -370,7 +369,7 @@ async def favorite_manage(ctx, *args):
     elif args[0] == '복원':
         await restore_favorites(ctx, *args)
 
-    elif args[0] == '리셋':
+    elif args[0] == '초기화':
         await reset_favorites(ctx, *args)
 
     else:
@@ -390,79 +389,16 @@ async def add_favorite(ctx, *args):
     package_name = args[2]
     dccon_name = args[3]
 
-    file_path = hassan_env.FAVORITE_PATH + str(ctx.author.id) +'.txt'
-
-    registed_count = get_file_line_cnt(file_path)
-
-    if registed_count >= hassan_env.FAVORITE_MAX:                                          # 즐겨찾기 추가횟수 체크
-        log(ctx, 'delete_favorite cannot register favorite (max)')
-        await ctx.channel.send('더 이상 즐겨찾기를 추가할 수 없습니다. 즐겨찾기 삭제 후 시도해주세요.')
-        return
-    elif registed_count > 0 and is_exactly_same_exist(ctx, shortcut_name):     # 해당 단축어가 이미 추가되어있는지 체크
-        log(ctx, f'delete_favorite "{shortcut_name}" already exists.')
-        await ctx.channel.send(f'"{shortcut_name}" 단축어으로 추가된 즐겨찾기가 이미 존재합니다.')
-        return 
-
-    author_id = str(ctx.author.id)
-    file = open(file_path, mode='at', encoding='utf-8')
-    file.write(shortcut_name + '\t' + package_name + '\t' + dccon_name + '\n')
-    file.close()
-
-    log(ctx, f'add_favorite {shortcut_name} is saved to {file_path}.')
-    await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기가 추가되었습니다. ({registed_count + 1}/{hassan_env.FAVORITE_MAX})')
-    return
+    msg =  favorite_controller.add_favorite(ctx, shortcut_name, package_name, dccon_name)
+   
+    await ctx.channel.send(msg)
 
 
 # 즐겨찾기 목록 조회
 async def show_favorites(ctx):
-    log(ctx, 'show_favorites command')
-
-    author_id = str(ctx.author.id)
-    
-    file_path = hassan_env.FAVORITE_PATH + author_id +'.txt'
-
-    if not os.path.exists(file_path):
-        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
-        return
-
-    favorites = ''
-    cnt = 0
-
-    file = open(file_path, mode='rt', encoding='utf-8')
-    lines = file.readlines()
-    for line in lines:
-        splited = line.split('\t')
-        cnt += 1
-        favorites += str(cnt) + '\t"' + splited[0] + '" "' + splited[1] + '" "' + splited[2].rstrip() + '"\n'
-    file.close()
-
-    # 즐겨찾기 목록 표시 + 사용자 표시
-    sender_tag = ctx.author.name + f'님의 즐겨찾기 목록이에요. ({cnt}/{hassan_env.FAVORITE_MAX})\n'
-    header = '#\t단축어\t패키지명\t디시콘명\n'
-
-    msg = sender_tag + header + favorites
-
-    # 즐겨찾기 목록이 2000길이 이상일 때도 보낼 수 있게 하였음
-    start = 0
-    end = hassan_env.MSG_MAX_LENGTH - 1
-
-    while True:
-        splited_msg = msg[start:end]
-        splited_len = len(splited_msg)
-        await ctx.author.send(splited_msg)
-
-        left_len = len(msg[end:])
-
-        if left_len <= 0:
-            break
-
-        if left_len < hassan_env.MSG_MAX_LENGTH:
-            await ctx.author.send(msg[end:])
-            break
-
-        else:
-            start = end + 1
-            end += hassan_env.MSG_MAX_LENGTH
+    result = favorite_controller.show_favorites(ctx)
+    for msg in result:
+        await ctx.channel.send(msg)
 
 
 # 즐겨찾기 삭제
@@ -474,45 +410,10 @@ async def delete_favorite(ctx, *args):
         await ctx.channel.send('인자수가 올바르지 않습니다. (!즐찾 삭제 "단축어")')
         return
 
-    author_id = str(ctx.author.id)
-    file_path = hassan_env.FAVORITE_PATH + author_id +'.txt'
+    shortcut_name = combine_words(args[1:])
 
-    if not os.path.exists(file_path):
-        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
-        return
-
-    shortcut_name = ''
-
-    for i, arg in enumerate(args):
-        if i > 0:
-            shortcut_name += arg + ' '
-
-    shortcut_name = shortcut_name.strip()
-
-    file = open(file_path, mode='rt', encoding='utf-8')
-    lines = file.readlines()
-    file.close()
-
-    new_lines = ''
-    isExist = False;
-
-    for line in lines:
-        splited = line.split('\t')
-        if splited[0] == shortcut_name:
-            isExist = True
-        else:
-            new_lines += line
-
-    if isExist:
-        file = open(file_path, mode='wt', encoding='utf-8')
-        file.writelines(new_lines)
-        file.close()
-
-        log(ctx, f'delete_favorite {shortcut_name} is delete from {file_path}.')
-        await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어가 삭제되었습니다.')
-    else:
-        log(ctx, f'delete_favorite "{shortcut_name}" cannot found')
-        await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
+    msg = favorite_controller.delete_favorite(ctx, shortcut_name)
+    await ctx.channel.send(msg)
 
 
 # 즐겨찾기 검색
@@ -524,43 +425,10 @@ async def search_favorite(ctx, *args):
         await ctx.channel.send('인자수가 올바르지 않습니다. (!즐찾 검색 "단축어")')
         return
 
-    author_id = str(ctx.author.id)
-    file_path = hassan_env.FAVORITE_PATH + author_id +'.txt'
+    keyword = combine_words(args[1:])
+    msg = favorite_controller.serach_favorites(ctx, keyword)
 
-    if not os.path.exists(file_path):
-        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
-        return
-
-    search_word = ''
-
-    for i, arg in enumerate(args):
-        if i > 0:
-            search_word += arg + ' '
-
-    search_word = search_word.strip()
-
-    file = open(file_path, mode='rt', encoding='utf-8')
-    lines = file.readlines()
-    file.close()
-
-    search_results = ''
-    isExist = False;
-
-    cnt = 0
-
-    for line in lines:
-        splited = line.split('\t')
-        if search_word in splited[0]:
-            cnt += 1
-            search_results += str(cnt) + '\t"' + splited[0] + '" "' + splited[1] + '" "' + splited[2].rstrip() + '"\n'
-
-    if not search_results == '':
-        log(ctx, f'search_favorite {search_word} searched successfully')
-
-        await ctx.author.send(ctx.author.name + f'님의 단축어 "{search_word}" 검색 결과 ({cnt}/{len(lines)}) \n'+ search_results)
-    else:
-        log(ctx, f'search_favorite {search_word} not found')
-        await ctx.author.send(ctx.author.name + f'님의 단축어 "{search_word}" 검색 결과가 없습니다.')
+    await ctx.author.send(msg)
 
 
 # 즐겨찾기 사용
@@ -568,82 +436,23 @@ async def search_favorite(ctx, *args):
 async def send_favorite(ctx, *args):
     log(ctx, 'send_favorite command')
 
-    shortcut_name = ''
-
     if len(args) <= 0:
         log(ctx, 'send_favorite wrong arg count')
         await ctx.channel.send('인자수가 올바르지 않습니다. (!ㅋ "단축어")')
         return
 
-    for arg in args:
-        shortcut_name += arg + ' '
+    shortcut_name = combine_words(args)
 
-    shortcut_name = shortcut_name.strip()
-    author_id = str(ctx.author.id)
-
-    file_path = hassan_env.FAVORITE_PATH + author_id +'.txt'
-    if not os.path.exists(file_path):
-        await ctx.channel.send('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
-        return
-
-    res = find_favorite(ctx, shortcut_name)
-    if res[0] == '':
-        log(ctx, f'send_favorite "{shortcut_name}" cannot found')
-        await ctx.channel.send('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
-        return
-
-    await send_dccon(ctx, *res)
-
-
-# 파일 줄 개수 조회
-def get_file_line_cnt(file_path):
-    if not os.path.exists(file_path):                  # 즐겨찾기 목록이 존재하지 않으면 0 반환
-        return 0
-
-    file = open(file_path, mode='rt', encoding='utf-8')
-    count = len(file.readlines())
-    file.close()
-
-    return count
-
-# 추가 시 중복 체크
-def is_exactly_same_exist(ctx, shortcut_name):
-    file_path = hassan_env.FAVORITE_PATH + str(ctx.author.id) +'.txt'
-
-    exist = False
-
-    file = open(file_path, mode='rt', encoding='utf-8')
-    lines = file.readlines()
-    for line in lines:
-        splited = line.split('\t')
-        if splited[0] == shortcut_name:
-            log(ctx, f'add_favorite {shortcut_name} is exist.')
-            exist = True
-            break
-    file.close()
-
-    return exist
-
-# 즐겨찾기 단축어로 탐색
-# 패키지명과 디시콘명 가져오기. 단축어와 근접한 디시콘명 가져옴
-def find_favorite(ctx, shortcut_name):
-    file_path = hassan_env.FAVORITE_PATH + str(ctx.author.id) +'.txt'
-
-    resultArr = ['', '']
-
-    file = open(file_path, mode='rt', encoding='utf-8')
-    lines = file.readlines()
-    for line in lines:
-        splited = line.split('\t')
-        if shortcut_name in splited[0]:
-            resultArr[0] = splited[1]                    # 반환할 패키지명 저장
-            resultArr[1] = splited[2].rstrip('\n')       # 반환할 디시콘명 저장
-            if shortcut_name == splited[0]:              # 단축어와 완전히 동일하면 탐색종료
-                break
-    file.close()
-
-    return resultArr
-
+    result_pair = favorite_controller.find_favorite_one(ctx, shortcut_name)
+    
+    is_success = result_pair[0]
+    result = result_pair[1]
+    
+    if is_success:
+        await send_dccon(ctx, *result)
+    else:
+        await ctx.channel.send(result)
+    
 
 # 즐겨찾기 백업
 @bot.command(pass_context=True)
@@ -664,14 +473,17 @@ async def favorite_backup(ctx, *args):
 # 요청한 사용자에게 대상 사용자의 즐겨찾기 목록을 전송
 @bot.command(pass_context=True)
 async def send_favorites(ctx, user_id):
-    fileName = user_id + '.txt'
-    file_path = hassan_env.FAVORITE_PATH + fileName
+    results = favorite_controller.dump_favorites(ctx, user_id)
+    
+    is_succeed = results[0]
+    msg = results[1]
+    file_path = results[2]
+    file_name = results[3]
 
-    if (not os.path.exists(file_path)) or (get_file_line_cnt(file_path) == 0):
-        await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
-        return
-
-    await ctx.author.send(file=File(file_path, fileName), content=ctx.author.name + '님의 즐겨찾기 목록을 업로드했습니다.')
+    if is_succeed:
+        await ctx.author.send(file=File(file_path, file_name), content=msg)
+    else:
+        await ctx.channel.send(msg)
 
 
 # 즐겨찾기 복원
@@ -681,44 +493,14 @@ async def restore_favorites(ctx, *args):
         await ctx.channel.send('인자수가 올바르지 않습니다. (!즐찾 복원 "파일URL")')
         return
 
-    url = args[1]
-    user_id = str(ctx.author.id)
-    save_file_path = hassan_env.FAVORITE_PATH + user_id + '.txt.tmp'
+    download_url = args[1]
+    msg = favorite_controller.resotre_favorites(ctx, download_url)
+    await ctx.channel.send(msg)
 
-    download_file(url, save_file_path)                                                 # ID.txt.tmp 로 파일 임시로 저장
-
-    new_favorites_line_length = get_file_line_cnt(save_file_path)
-
-    if (new_favorites_line_length <= 0) or (new_favorites_line_length > hassan_env.FAVORITE_MAX): # 유저가 보낸 즐겨찾기 파일의 줄 수가 0보다 작거나 MAX보다 크면 교체하지 않음.
-        log(ctx, 'restore_favorites ' + user_id + '\'s favorites restore blocked')
-        await ctx.channel.send('<@' + user_id + '>님이 업로드한 즐겨찾기 파일이 빈 파일이거나 최대치를 넘깁니다. 복원할 수 없습니다.')
-        os.remove(save_file_path)
-        return
-
-    a=save_file_path[:-4]
-    shutil.move(save_file_path, save_file_path[:-4])                                   # 즐겨찾기 교체
-    log(ctx, 'restore_favorites restored ' + user_id + '\'s favorites')
-    await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록을 복원했습니다.')
-
-
-def download_file(url, file_name = None):
-	if not file_name:
-		file_name = url.split('/')[-1]
-
-	with open(file_name, "wb") as file:
-            response = get(url)               
-            file.write(response.content)
-
-
+# 즐겨찾기 초기화
 async def reset_favorites(ctx, *args):
-    user_id = str(ctx.author.id)
-    file_path = hassan_env.FAVORITE_PATH + user_id + '.txt'
-
-    if os.path.exists(file_path):
-        os.remove(file_path)
-
-    log(ctx, 'reset_favorites reset ' + user_id + '\'s favorites')
-    await ctx.channel.send('<@' + user_id + '>님의 즐겨찾기 목록을 리셋했습니다.')
+    msg = favorite_controller.reset_favorites(ctx)
+    await ctx.channel.send(msg)
 
 ############################################################################################################
 ############################################################################################################
@@ -729,7 +511,7 @@ async def controller_clear_cache(ctx, *args):
     user_id = str(ctx.author.id)
     owner_id = hassan_env.OWNER_ID                            ## TODO: 해당 서버의 주인 id get
     
-    msg = clear_cache(user_id, owner_id)
+    msg = cache_controller.clear_cache(user_id, owner_id)
 
     await ctx.channel.send(msg)
 

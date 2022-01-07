@@ -337,5 +337,5 @@ ASALocalRun/
 /.env
 .venv/
 .cache/
-favorites/
+.favorites/
 .concmdAutoDelChannel

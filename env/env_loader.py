@@ -26,7 +26,7 @@ def _load_discord_env():
     hassan_env.MSG_MAX_LENGTH = 2000
 
 def _load_favorite_env():
-    hassan_env.FAVORITE_PATH = os.path.join(ROOT_DIR, 'favorites')
+    hassan_env.FAVORITE_PATH = os.path.join(ROOT_DIR, '.favorites')
     hassan_env.FAVORITE_MAX = int(os.getenv('FAVORITE_MAX'))
 
 def _load_cache_env():
