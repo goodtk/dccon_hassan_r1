@@ -23,7 +23,6 @@ async def send_dccon_list(ctx, package_name):
     message = _list_print(package_detail_json, package_name, package_search_req, target_package_num)
     await sender.send(ctx, message)
 
-# TODO: view 패키지로 이동
 # 디시콘 목록과 디시콘샵 URL 반환
 def _list_print(package_detail_json, package_name, package_search_req, target_package_num):
     available_dccon_list = []

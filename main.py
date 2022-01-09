@@ -240,7 +240,7 @@ async def manual_delete_favorite(ctx, *args):
     options=[
         create_option(
             name="keyword",
-            description="검색할 단축어",
+            description="검색어",
             option_type=3,
             required=True
         )
@@ -257,8 +257,7 @@ async def manual_search_favorite(ctx, *args):
 
     if len(args) < 2:
         log(ctx, 'search_favorite wrong arg count')
-        await ctx.send('인자수가 올바르지 않습니다. (!즐찾 검색 "단축어")')
-        return
+        return await error.send_error_search_favorite(ctx)
 
     keyword = combine_words(args[1:])
     await favorite_controller.serach_favorites(ctx, keyword)

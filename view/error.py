@@ -17,6 +17,9 @@ async def send_error_add_favorite(ctx):
 async def send_error_delete_favorite(ctx):
     await sender(ctx, '인자수가 올바르지 않습니다. (!즐찾 삭제 "단축어")')
 
+async def send_error_search_favorite(ctx):
+    await sender(ctx, '인자수가 올바르지 않습니다. (!즐찾 검색 "검색어")')
+
 async def send_error_backup_favorite(ctx):
     await sender(ctx, '인자수가 올바르지 않습니다. (!즐찾 백업')
 
