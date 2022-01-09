@@ -89,7 +89,7 @@ async def manual_send_dccon(ctx, *args):
         await dccon_controller.send_dccon(ctx, package_name, idx)
         
 @slash.slash(
-    name="dccon_list",
+    name="콘_목록",
     description="디시콘 목록을 조회할 수 있습니다.",
     options=[
         create_option(
