@@ -5,7 +5,8 @@ import env.hassan_env as hassan_env
 from logger.logger import system_log
 
 # 캐시 클리어
-def clear_cache(user_id, owner_id):
+def clear_cache(user_id):
+    owner_id = hassan_env.OWNER_ID                            ## TODO: 해당 서버의 주인 id get
 
     if not (owner_id == user_id):
         system_log(f'{user_id} attempted to clear cache.')

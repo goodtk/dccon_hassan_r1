@@ -1,6 +1,6 @@
 import env.hassan_env as hassan_env
 from discord import Embed
-from logger.logger import log, system_log
+from logger.logger import log
 
 async def send_help(ctx):
     log(ctx, 'help command')
@@ -35,7 +35,7 @@ async def send_help_favorite(ctx):
     embed.add_field(name='즐겨찾기 검색', value='!즐찾 검색 "단축어"', inline=False)
     embed.add_field(name='즐겨찾기 사용', value='!ㅋ "단축어"', inline=False)
     embed.add_field(name='즐겨찾기 백업', value='!즐찾 백업 [사용자ID] (ID는 옵션)', inline=False)
-    embed.add_field(name='사용 예시', value='!즐찾 백업, !즐찾 백업 123456789, ...', inline=False)
+    embed.add_field(name='사용 예시', value='!즐찾 백업', inline=False)
     embed.add_field(name='즐겨찾기 복원', value='!즐찾 복원 "파일URL"', inline=False)
     embed.add_field(name='즐겨찾기 초기화', value='!즐찾 초기화', inline=False)
     embed.set_footer(text='몬헌좆망겜')

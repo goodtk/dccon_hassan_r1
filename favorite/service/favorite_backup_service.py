@@ -34,7 +34,7 @@ def restore_favorites(ctx, download_url):
     # TODO: 파일 사이즈, 확장자 검사 필요
 
     shutil.move(save_file_path, save_file_path[:-4])                                   # 즐겨찾기 교체
-    log(ctx, 'restore_favorites restored ' + user_id + '\'s favorites')
+    log(ctx, 'restore_favorites restored ' + str(user_id) + '\'s favorites')
     return '<@' + user_id + '>님의 즐겨찾기 목록을 복원했습니다.'
 
 # 유저가 올린 URL로부터 파일을 다운

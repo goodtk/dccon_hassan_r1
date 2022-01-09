@@ -22,7 +22,7 @@ def _load_discord_env():
     hassan_env.EMBED_COLOR = 0x4559e9
     hassan_env.INVITE_URL = 'https://discordapp.com/oauth2/authorize?client_id=629279090716966932&scope=bot&permissions=101376'
     hassan_env.OWNER_ID = os.getenv('OWNER_ID')
-    hassan_env.CMD_AUTODEL_CHANNEL_PATH = os.path.join(ROOT_DIR, '.concmdAutodelChannel.txt')
+    hassan_env.CMD_AUTODEL_CHANNEL_PATH = os.path.join(ROOT_DIR, '.concmdAutodelChannel')
     hassan_env.MSG_MAX_LENGTH = 2000
 
 def _load_favorite_env():

@@ -1,7 +1,7 @@
 def combine_words(args):
-    shortcut_name = ''
+    keyword = ''
 
     for i, arg in enumerate(args):
-        shortcut_name += arg + ' '
+        keyword += arg + ' '
 
-    return shortcut_name.strip()
+    return keyword.strip()

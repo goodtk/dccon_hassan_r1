@@ -3,7 +3,7 @@ import env.hassan_env as hassan_env
 from logger.logger import log
 
 # 즐겨찾기 삭제
-def delete_favorite(ctx, shortcut_name):
+def delete_favorite(ctx, keyword):
     log(ctx, 'delete_favorite command')
 
     author_id = str(ctx.author.id)
@@ -21,7 +21,7 @@ def delete_favorite(ctx, shortcut_name):
 
     for line in lines:
         splited = line.split('\t')
-        if splited[0] == shortcut_name:
+        if splited[0] == keyword:
             is_shortcut_exists = True
         else:
             new_lines += line
@@ -31,11 +31,11 @@ def delete_favorite(ctx, shortcut_name):
         file.writelines(new_lines)
         file.close()
 
-        log(ctx, f'delete_favorite {shortcut_name} is delete from {file_path}.')
-        return '<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어가 삭제되었습니다.'
+        log(ctx, f'delete_favorite {keyword} is delete from {file_path}.')
+        return '<@' + author_id + f'>님의 즐겨찾기 목록에서 "{keyword}" 단축어가 삭제되었습니다.'
     else:
-        log(ctx, f'delete_favorite "{shortcut_name}" cannot found')
-        return '<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.'
+        log(ctx, f'delete_favorite "{keyword}" cannot found')
+        return '<@' + author_id + f'>님의 즐겨찾기 목록에서 "{keyword}" 단축어를 찾을 수 없습니다.'
 
 # 즐겨찾기 초기화
 def reset_favorites(ctx):

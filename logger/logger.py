@@ -11,8 +11,9 @@ def _ctx_format(ctx):
     # msg.server --> msg.guild
     # https://discordpy.readthedocs.io/en/latest/migrating.html#server-is-now-guild
     
-    channel_type = ctx.channel.type.value
-    if channel_type == 1:
-        return f'DM > {ctx.author.name}'
-    else:
-        return f'{ctx.guild.name} > {ctx.channel.name} > {ctx.author.name}'
+    if ctx.channel:
+        channel_type = ctx.channel.type.value
+        if channel_type != 1:
+            return f'{ctx.guild.name} > {ctx.channel.name} > {ctx.author.name}'            
+    
+    return f'DM > {ctx.author.name}'

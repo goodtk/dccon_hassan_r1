@@ -1,4 +1,5 @@
 from discord import File
+from util import discord_util
 
 # 요청자의 태그와 디시콘 전송
 async def send_with_dccon(ctx, buffer, file_name):
@@ -12,3 +13,12 @@ async def send_with_dccon(ctx, buffer, file_name):
 
 async def send(ctx, msg):
     await ctx.send(msg)
+
+async def send_dm(ctx, msg):
+    await ctx.author.send(msg)
+
+async def reaction_by_slash(ctx):
+    if discord_util.is_called_by_slash(ctx):
+        await ctx.defer()
+    else:
+        await ctx.channel.trigger_typing()

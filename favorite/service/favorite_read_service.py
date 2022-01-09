@@ -5,7 +5,7 @@ from util.file_util import get_file_line_cnt
 from error.favorite_error import FavoriteError
 
 # 즐겨찾기 사용
-def find_favorite_one(ctx, shortcut_name):
+def find_favorite_one(ctx, keyword):
     log(ctx, 'send_favorite command')
 
     author_id = str(ctx.author.id)
@@ -14,17 +14,17 @@ def find_favorite_one(ctx, shortcut_name):
     if not os.path.exists(file_path):
         raise FavoriteError('<@' + author_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
 
-    dccon = _find_matches_from_file(ctx, shortcut_name)
+    dccon = _find_matches_from_file(ctx, keyword)
     if dccon[0] == '':
-        log(ctx, f'send_favorite "{shortcut_name}" cannot found')
-        raise FavoriteError('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{shortcut_name}" 단축어를 찾을 수 없습니다.')
+        log(ctx, f'send_favorite "{keyword}" cannot found')
+        raise FavoriteError('<@' + author_id + f'>님의 즐겨찾기 목록에서 "{keyword}" 단축어를 찾을 수 없습니다.')
 
     return dccon
 
 
 # 즐겨찾기 단축어로 탐색
 # 패키지명과 디시콘명 가져오기. 단축어와 근접한 디시콘명 가져옴
-def _find_matches_from_file(ctx, shortcut_name):
+def _find_matches_from_file(ctx, keyword):
     file_path = os.path.join(hassan_env.FAVORITE_PATH, str(ctx.author.id)) +'.txt'
 
     resultArr = ['', '']
@@ -33,10 +33,10 @@ def _find_matches_from_file(ctx, shortcut_name):
     lines = file.readlines()
     for line in lines:
         splited = line.split('\t')
-        if shortcut_name in splited[0]:
+        if keyword in splited[0]:
             resultArr[0] = splited[1]                    # 반환할 패키지명 저장
             resultArr[1] = splited[2].rstrip('\n')       # 반환할 디시콘명 저장
-            if shortcut_name == splited[0]:              # 단축어와 완전히 동일하면 탐색종료
+            if keyword == splited[0]:              # 단축어와 완전히 동일하면 탐색종료
                 break
     file.close()
 
