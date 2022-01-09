@@ -15,7 +15,7 @@ def get_favorites_file(ctx, user_id):
         raise FavoriteError('<@' + user_id + '>님의 즐겨찾기 목록이 존재하지 않습니다.')
 
     msg = '<@' + user_id + '>님의 즐겨찾기 목록을 업로드했습니다.'
-    return [msg, file_path, file_name]
+    return msg, file_path, file_name
 
 # 즐겨찾기 복원
 def restore_favorites(ctx, download_url):

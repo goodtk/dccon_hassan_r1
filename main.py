@@ -12,7 +12,7 @@ import env.hassan_env as hassan_env
 from favorite import favorite_controller
 from cache import cache_controller
 from util.string_util import combine_words
-from dccon import core
+from dccon.service import dccon_core_service
 from error.favorite_error import FavoriteError
 from view import help
 
@@ -82,7 +82,7 @@ async def manual_about(ctx):
 )
 async def slash_send_dccon(ctx, package_name, idx):
     await ctx.defer()
-    await core.send_dccon(ctx, package_name, idx)
+    await dccon_core_service.send_dccon(ctx, package_name, idx)
 
 @bot.command(name='콘')
 async def manual_send_dccon(ctx, *args):
@@ -91,11 +91,10 @@ async def manual_send_dccon(ctx, *args):
         await ctx.channel.send('사용법을 참고해주세요. (!도움)' + '\n디시콘 패키지명이나 디시콘명에 공백이 있을 경우 큰따옴표로 묶어야 합니다.')
         return
 
-    await ctx.channel.trigger_typing()
     if len(args) < 2:
-        await core.send_dccon_list(ctx, args[0])
+        await dccon_core_service.send_dccon_list(ctx, args[0])
     else:
-        await core.send_dccon(ctx, args[0], args[1])
+        await dccon_core_service.send_dccon(ctx, args[0], args[1])
         
 @slash.slash(
     name="dccon_list",
@@ -114,7 +113,7 @@ async def manual_send_dccon(ctx, *args):
 )
 async def slash_send_dccon_list(ctx, package_name):
     await ctx.defer()
-    await core.send_dccon_list(ctx, package_name)
+    await dccon_core_service.send_dccon_list(ctx, package_name)
         
 
 ############################################################ 즐겨찾기 ############################################################
@@ -173,7 +172,7 @@ async def favorite_command_selector(ctx, *args):
         await restore_favorites(ctx, *args)
 
     elif command == '초기화':
-        await reset_favorites(ctx, *args)
+        await manual_reset_favorites(ctx)
 
     else:
         await ctx.send('올바르지 않은 명령어입니다. 사용법을 참고해주세요. (!즐찾)')
@@ -301,11 +300,8 @@ async def restore_favorites(ctx, *args):
     msg = favorite_controller.resotre_favorites(ctx, download_url)
     await ctx.send(msg)
 
-async def slash_reset_favorites(ctx):
-    await reset_favorites(ctx)
-
 # 즐겨찾기 초기화
-async def reset_favorites(ctx):
+async def manual_reset_favorites(ctx):
     msg = favorite_controller.reset_favorites(ctx)
     await ctx.send(msg)
 

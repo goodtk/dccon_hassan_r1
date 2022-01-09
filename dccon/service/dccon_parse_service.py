@@ -1,60 +1,12 @@
 import requests
 import urllib
 from bs4 import BeautifulSoup
-from logger.logger import log
 import env.hassan_env as hassan_env
-from cache import cache_controller
-from .download import downloader
-from send import sender
-from dccon import autoclear
-from error.dccon_error import DcconDownloadError, DcconPackageNotFoundError
-
-# 디시콘 목록 출력
-async def send_dccon_list(ctx, package_name):
-    try:
-        package_data = _parse_package_data(ctx, package_name)
-    except DcconPackageNotFoundError as e:
-        await sender.send(ctx, str(e))
-        return
-
-    package_detail_json = package_data[0]
-    package_search_req = package_data[1]
-    target_package_num = package_data[2]
-    package_name = package_data[3]
-
-    log(ctx, f'send_dccon_list, interpreted: {package_name}.')
-    
-    message = _list_print(package_detail_json, package_name, package_search_req, target_package_num)
-    await sender.send(ctx, message)
-
-# 디시콘 출력
-async def send_dccon(ctx, package_name, idx):
-    try:
-        package_data = _parse_package_data(ctx, package_name)
-    except DcconPackageNotFoundError as e:
-        await sender.send(ctx, str(e))
-        return
-
-    package_detail_json = package_data[0]
-    package_name = package_data[3]
-
-    log(ctx, f'send_dccon, interpreted: {package_name}, {idx}.')
-
-    try:
-        buffer, file_name = await _get_dccon_file(ctx, package_detail_json, idx)
-        await sender.send_with_dccon(ctx, buffer, file_name)
-        log(ctx, 'succeed')
-    except DcconDownloadError as e:
-        await sender.send(ctx, str(e))
-    except:
-        log(ctx, 'not found')
-        await sender.send(ctx, f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 찾지 못했습니다.')
-        await sender.send(ctx, '인자로 패키지 이름만 넘길 경우 사용 가능한 디시콘 목록이 출력됩니다.')
-    else:
-        await autoclear.auto_delete_dccon(ctx)
+from error.dccon_error import DcconPackageNotFoundError
+from logger.logger import log
 
 # 패키지 데이터 파싱
-def _parse_package_data(ctx, package_name):
+def parse_package_data(ctx, package_name):
     session = requests.Session()
     package_name_encoded = urllib.parse.quote(package_name)                                                             # 2020-02-07 패키지명을 URL 인코딩하도록 수정하였음.
     package_search_url = hassan_env.DCCON_SEARCH_URL + package_name_encoded
@@ -73,58 +25,13 @@ def _parse_package_data(ctx, package_name):
         log(ctx, 'processing with: ' + target_package_num)
 
         package_detail_json = _dccon_get_detail(session, package_search_req, package_name, target_package_num)
-        return [package_detail_json, package_search_req, target_package_num, target_package_name]
+        return package_detail_json, package_search_req, target_package_num, target_package_name
 
     except (IndexError, UnboundLocalError) as e:  # maybe no search result w/ IndexError?
         log(ctx, 'error! (maybe no search result) : ' + str(e))
         raise DcconPackageNotFoundError(f'"{package_name}" 디시콘 패키지 정보를 찾을 수 없습니다.')
 
-# 디시콘 목록과 디시콘샵 URL 반환
-def _list_print(package_detail_json, package_name, package_search_req, target_package_num):
-    available_dccon_list = []
-    for dccon in package_detail_json['detail']:
-        available_dccon_list.append(dccon['title'])
 
-    result = f'"{package_name}"에서 사용 가능한 디시콘 : ' + ', '.join(available_dccon_list).rstrip(', ')
-    result += '\n' + '디시콘샵 URL : ' + package_search_req.request.url + '#' + target_package_num
-    return result
-
-# 디시콘 파일명, 버퍼를 다운 혹은 캐시를 통해 반환
-# respect https://github.com/gw1021/dccon-downloader/blob/master/python/app.py#L7:L18
-async def _get_dccon_file(ctx, package_detail_json, idx):
-    package_name = package_detail_json['info']['title']
-
-    results = cache_controller.find_cache(package_name, idx)                                                                 # 2020-02-09 캐시에서 탐색
-
-    buffer = ''
-    file_name = ''
-
-    if results:
-        log(ctx, 'use cache')
-        buffer = results[0]
-        file_name = results[1]
-    else:
-        downloaded = await _download_dccon(ctx, package_name, idx, package_detail_json)
-        buffer = downloaded[0]
-        file_name = downloaded[1]
-
-    return [buffer, file_name]
-
-# 패키지명과 idx로 디시콘 다운로드
-async def _download_dccon(ctx, package_name, idx, package_detail_json):
-    for dccon in package_detail_json['detail']:                                                                             # 파싱한 결과에서 탐색
-        if dccon['title'] == idx:
-            results = await downloader.dccon_download(dccon, package_name, idx)
-            
-            if not results[0] == '':
-                return results
-            
-            log(ctx, 'dccon download failed')
-            raise DcconDownloadError(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 다운받는데 실패하였습니다.')
-
-    log(ctx, 'no dccon in package')
-    raise DcconDownloadError(f'"{package_name}" 디시콘 패키지에서 "{idx}" 디시콘을 찾을 수 없습니다.')
-        
 # 검색결과 중 디시콘 패키지명과 완전히 일치한 패키지가 있는지 탐색
 def _find_package_by_name(package_search_list, package_name):
     for searched_package in package_search_list:

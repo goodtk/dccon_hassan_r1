@@ -4,7 +4,7 @@ from util.directory_util import create_directory
 from logger.logger import system_log
 
 # 캐시 추가
-def add_cache(package_name, idx, file_name, bytes):
+def add_cache(package_name, idx, file_name, buffer):
     if hassan_env.CACHE_MAX == 0:
         return
 
@@ -19,7 +19,7 @@ def add_cache(package_name, idx, file_name, bytes):
     # 이미지 저장
     cache_path = os.path.join(hassan_env.CACHE_PATH, f'{file_name}')
     with open(cache_path,'wb') as out: ## Open temporary file as bytes
-        out.write(bytes.read())                         ## Read bytes into file
+        out.write(buffer.read())                         ## Read bytes into file
 
     # 캐시 인덱스에 append
     # 캐시 인덱스에 중복추가안하게 해라

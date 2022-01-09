@@ -4,9 +4,10 @@ import env.hassan_env as hassan_env
 
 # 로컬 캐시에 디시콘 있으면 버퍼와 파일명 반환
 def find_dccon(package_name, idx):
+    result = ['', '']
 
     if hassan_env.CACHE_MAX == 0:                                                                                              # 캐시 사용하지 않는 경우
-        return
+        return result
 
     cache_file_name = _find_cache_from_file(package_name, idx)
 
@@ -15,12 +16,15 @@ def find_dccon(package_name, idx):
         buffer=''
 
         if not os.path.exists(cache_file_path):                                                                     # 캐시 파일이 존재하지 않는 경우
-            return
+            return result
 
         with open(cache_file_path, 'rb') as fin:
             buffer = io.BytesIO(fin.read())
 
-        return [buffer, cache_file_name]
+        result[0] = buffer
+        result[1] = cache_file_name
+    
+    return result
 
 # 캐시 파일 찾기
 # 디시콘 패키지명과 idx(디시콘명)으로 탐색해서, 있으면 파일명 반환
