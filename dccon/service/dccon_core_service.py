@@ -3,6 +3,7 @@ from cache import cache_controller
 from . import command_autoclear_service, dccon_download_service, dccon_parse_service
 from send import sender
 from error.dccon_error import DcconDownloadError, DcconPackageNotFoundError
+from util import discord_util
 
 # 디시콘 목록 출력
 async def send_dccon_list(ctx, package_name):
@@ -34,7 +35,6 @@ def _list_print(package_detail_json, package_name, package_search_req, target_pa
     return result
 
 
-
 # 디시콘 출력
 async def send_dccon(ctx, package_name, idx):
     try:
@@ -60,7 +60,8 @@ async def send_dccon(ctx, package_name, idx):
         await sender.send(ctx, '인자로 패키지 이름만 넘길 경우 사용 가능한 디시콘 목록이 출력됩니다.')
     
     if command_autoclear_service.is_command_autodelete_channel(ctx):
-        await ctx.message.delete()                      # 명령어 메시지 삭제
+        if not discord_util.is_called_by_slash(ctx):
+            await ctx.message.delete()                      # 명령어 메시지 삭제
 
 # 디시콘 파일명, 버퍼를 다운 혹은 캐시를 통해 반환
 # respect https://github.com/gw1021/dccon-downloader/blob/master/python/app.py#L7:L18
