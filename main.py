@@ -303,7 +303,7 @@ async def slash_favorite_backup(ctx):
 
 @bot.command(pass_context=True)
 async def manual_favorite_backup(ctx, *args):
-    if len(args) > 0:
+    if len(args) > 1:
         log(ctx, 'favorite_backup wrong arg count')
         return await error.send_error_backup_favorite(ctx)
 
