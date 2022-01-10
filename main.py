@@ -78,6 +78,7 @@ async def slash_send_dccon(ctx, package_name, idx):
 @bot.command(name='콘')
 async def manual_send_dccon(ctx, *args):
     if not args or len(args) > 2:
+        log(ctx, 'empty args')
         return await error.send_send_dccon_error(ctx)
         
     package_name = args[0]
@@ -113,11 +114,11 @@ async def slash_send_dccon_list(ctx, package_name):
 @bot.command(name='즐찾')
 async def favorite_command_selector(ctx, *args):
     if not args:
-        return await error.send_error_favorite(ctx, '인자')
+        return await help.send_help_favorite(ctx)
 
     if not os.path.isdir(hassan_env.FAVORITE_PATH):
         if not create_directory(hassan_env.FAVORITE_PATH):
-            await error.send_error_directory_create(ctx)
+            return await error.send_error_directory_create(ctx)
     
     command = args[0]
 
@@ -304,7 +305,7 @@ async def slash_favorite_backup(ctx):
 async def manual_favorite_backup(ctx, *args):
     if len(args) > 0:
         log(ctx, 'favorite_backup wrong arg count')
-        return error.send_error_backup_favorite(ctx)
+        return await error.send_error_backup_favorite(ctx)
 
     await favorite_controller.send_favorites_file(ctx, str(ctx.author.id))
 
