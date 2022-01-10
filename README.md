@@ -2,7 +2,7 @@
 디시콘을 디스코드에서 쓸 수 있게 해주는 디스코드 봇입니다.
 
 ## Demo
-[봇 초대 링크](https://discordapp.com/oauth2/authorize?&client_id=629279090716966932&scope=bot&permissions=109568)
+[봇 초대 링크](https://discordapp.com/oauth2/authorize?&client_id=629279090716966932&scope=bot&permissions=2147593216)
 
 Oracle Free Tier 서버에서 돌아가고 있는 봇입니다. 예고 없이 봇 작동이 중지될 수 있습니다. 
 
