@@ -44,8 +44,7 @@ def _find_package_by_name(package_search_list, package_name):
 def _dccon_get_detail(session, package_search_req, package_name, target_package_num):
     package_detail_req = session.post(hassan_env.DCCON_DETAILS_URL,
                                 # content-type: application/x-www-form-urlencoded; charset=UTF-8
-                                cookies={'ci_c': package_search_req.cookies['ci_c'],
-                                            'PHPSESSID': package_search_req.cookies['PHPSESSID']},
+                                cookies={'ci_c': package_search_req.cookies['ci_c']},
                                 headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                             'Referer': hassan_env.DCCON_SEARCH_URL + str(package_name.encode('utf-8')),
                                             'Origin': hassan_env.DCCON_HOME_URL,
