@@ -1,5 +1,10 @@
 # 디시콘 핫산
 디시콘을 디스코드에서 쓸 수 있게 해주는 디스코드 봇입니다.
+디코 개발자 페이지 가서
+테스트용 봇 하나 만들고
+봇 토큰을 .env 안에 넣으면 세팅 끝
+개발용 디코 방 하나 파서
+거기다 봇 초대하고 테스트
 
 ## Demo
 [봇 초대 링크](https://discord.com/api/oauth2/authorize?client_id=629279090716966932&permissions=2147526656&scope=bot%20applications.commands)
